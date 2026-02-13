@@ -115,6 +115,7 @@ export default function DashboardPage() {
   const [cargando, setCargando] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const initialFormState: EmbarqueForm = {
     semana: '', booking: '', vessel: '', voyager: '', naviera: '', cliente: '',
@@ -359,26 +360,43 @@ export default function DashboardPage() {
     
     <div className="flex min-h-screen bg-slate-950 text-slate-200">
       {/* SIDEBAR */}
-      <aside className="w-64 border-r border-slate-800 flex flex-col sticky top-0 h-screen">
-        <div className="p-6 border-b border-slate-800">
-          <h2 className="text-xl font-bold text-blue-400 tracking-tighter italic">HF-SYSTEM</h2>
+      <aside className={`transition-all duration-300 ease-in-out border-r border-slate-800 flex flex-col sticky top-0 h-screen bg-slate-900/80 backdrop-blur-md 
+        ${sidebarOpen ? 'w-64' : 'w-20'}`}>
+        
+        <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+          {/* Solo mostramos el texto si está abierto */}
+          {sidebarOpen && <h2 className="text-xl font-bold text-blue-400 tracking-tighter italic animate-in fade-in">HF-SYSTEM</h2>}
+          
+          {/* Botón para Toggle (Ocultar/Mostrar) */}
+          <button 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-1 hover:bg-slate-800 rounded text-slate-400 transition-colors"
+          >
+            {sidebarOpen ? '◀' : '▶'}
+          </button>
         </div>
+        
         <nav className="flex-1 p-4 space-y-2">
           {MENU_ITEMS.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveModule(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                activeModule === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-100'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                activeModule === item.id 
+                  ? 'bg-blue-600 text-white shadow-lg' 
+                  : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'
+              } ${!sidebarOpen ? 'justify-center' : ''}`}
+              title={item.label}
             >
-              <span className="text-lg">{item.icon}</span>
-              {item.label}
+              <span className="text-xl">{item.icon}</span>
+              {/* Ocultamos el texto si el sidebar está cerrado */}
+              {sidebarOpen && <span className="animate-in fade-in slide-in-from-left-2">{item.label}</span>}
             </button>
           ))}
         </nav>
+
         <div className="p-4 border-t border-slate-800 text-[10px] text-slate-600 text-center uppercase tracking-widest">
-          v1.0.2 - 2026
+          {sidebarOpen ? 'v1.0.2 - 2026' : 'v1.0'}
         </div>
       </aside>
 

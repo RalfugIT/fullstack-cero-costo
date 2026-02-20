@@ -17,7 +17,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'cupos', label: 'Cupos', icon: '📊' },
 ];
 
-// --- INTERFACES (Mantenidas y Reforzadas) ---
+// --- INTERFACES (ESTRUCTURAS DE DATOS//CAMPOS Mantenidas y Reforzadas) ---
 
 // Interfaz principal para un embarque, con todos los campos definidos
 interface Embarque {
@@ -108,7 +108,7 @@ interface SelectFieldProps {
 // --- COMPONENTE PRINCIPAL ---
 export default function DashboardPage() {
 
-  // --- ESTADOS PRINCIPALES ---
+  // ESTADOS PRINCIPALES ---
   const [activeModule, setActiveModule] = useState('embarques');
   const [datos, setDatos] = useState<Embarque[]>([]);
   const [activeTab, setActiveTab] = useState('comex');
@@ -135,7 +135,7 @@ export default function DashboardPage() {
 
   const [form, setForm] = useState<EmbarqueForm>(initialFormState);
 
-  // --- LÓGICA DE CÁLCULOS ---
+  // LÓGICA DE CÁLCULOS ---
   const calculos = {
     cjs_totales_cont: Number(form.cant_contenedores) * Number(form.cajas_x_cont),
     cjs_totales_pallet: Number(form.cant_pallets) * Number(form.cajas_x_pallet),
@@ -150,7 +150,6 @@ export default function DashboardPage() {
     const { data } = await supabase.from('embarques').select('*').order('id_embarque', { ascending: false });
     if (data) setDatos(data);
   }
-
   useEffect(() => {
     fetchEmbarques();
     const channel = supabase.channel('realtime-nav')
@@ -159,12 +158,15 @@ export default function DashboardPage() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // --- HANDLERS ---
+  // --- TODOS LOS HANDLERS ---
+
+  // FUNCIÓN: MANEJAR INPUT ---
   const handleInput = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setForm({ ...form, [name]: type === 'number' ? Number(value) : value });
   };
 
+  // FUNCIÓN: PREPARAR EDICIÓN ---
   const prepararEdicion = (reg: Embarque) => {
     setForm({ ...reg } as Embarque);
     setEditandoId(reg.id_embarque);
@@ -172,6 +174,7 @@ export default function DashboardPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // FUNCIÓN: GUARDAR EMBARQUE ---
   async function guardarEmbarque(e: FormEvent) {
     e.preventDefault();
     setCargando(true);
@@ -188,12 +191,12 @@ export default function DashboardPage() {
     // Corrección del error de Timestamp: Convertimos "" a null
     const payload = Object.fromEntries(
       Object.entries(datosParaGuardar).map(([key, value]) => [
-        key, 
-        value === "" ? null : value 
+        key,
+        value === "" ? null : value
       ])
     );
 
-    const { error } = editandoId 
+    const { error } = editandoId
       ? await supabase.from('embarques').update(payload).eq('id_embarque', editandoId)
       : await supabase.from('embarques').insert([payload]);
 
@@ -207,6 +210,7 @@ export default function DashboardPage() {
     setCargando(false);
   }
 
+  // FUNCIÓN: ELIMINAR EMBARQUE ---
   async function eliminarEmbarque(id: number) {
     if (!confirm("¿Está seguro de eliminar este embarque?")) return;
     const { error } = await supabase.from('embarques').delete().eq('id_embarque', id);
@@ -220,17 +224,17 @@ export default function DashboardPage() {
       <form onSubmit={guardarEmbarque} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl mb-10">
         <div className="flex bg-slate-800/50 items-center justify-between border-b border-slate-700">
           <div className="flex">
-            {['comex', 'carga', 'financiero'].map((tab) => (
-              <button 
+            {['Comex', 'Carga', 'Financiero'].map((tab) => (
+              <button
                 key={tab} type="button" onClick={() => setActiveTab(tab)}
-                className={`px-8 py-4 text-xs font-bold uppercase tracking-wider transition-all ${activeTab === tab ? 'bg-blue-600 text-white shadow-inner' : 'text-slate-400 hover:bg-slate-700'}`}
+                className={`px-8 py-4 text-xs font-bold tracking-wider transition-all ${activeTab === tab ? 'bg-blue-600 text-white shadow-inner' : 'text-slate-400 hover:bg-slate-700'}`}
               >
                 {tab}
               </button>
             ))}
           </div>
           <button type="button" onClick={() => setCollapsed(!collapsed)} className="p-4 text-slate-400 hover:text-white text-xs font-bold">
-            {collapsed ? 'AMPLIAR FORMULARIO' : 'CONTRAER'}
+            {collapsed ? 'Ampliar Formulario' : 'Contraer'}
           </button>
         </div>
 
@@ -257,33 +261,69 @@ export default function DashboardPage() {
             </div>
 
             <div className="p-6 grid grid-cols-1 md:grid-cols-5 gap-5">
-              {activeTab === 'comex' && (
+              {activeTab === 'Comex' && (
                 <>
-                  <SelectField label="Agencia" name="agencia_exportadora" value={form.agencia_exportadora} onChange={handleInput} options={['HugoFruit', 'Fresh Up', 'Mia Calidad']} />
-                  <Field label="Semana" name="semana" value={form.semana} onChange={handleInput} />
+                  <SelectField label="Agencia" name="agencia_exportadora" value={form.agencia_exportadora} onChange={handleInput} options={['HugoFruit', 'Fresh-Up']} />
+                  <SelectField label="Semana" name="semana" value={form.semana} onChange={handleInput} options={['2026-09', '2026-10', '2026-11', '2026-12']} />
                   <Field label="Booking" name="booking" value={form.booking} onChange={handleInput} />
                   <Field label="Nave" name="vessel" value={form.vessel} onChange={handleInput} />
+                  <Field label="Voyager" name="voyager" value={form.voyager} onChange={handleInput} />
+                  <Field label="Naviera" name="naviera" value={form.naviera} onChange={handleInput} />
+                  <Field label="Cliente" name="cliente" value={form.cliente} onChange={handleInput} />
                   <Field label="Puerto Destino" name="puerto_destino_de_descarga" value={form.puerto_destino_de_descarga} onChange={handleInput} />
-                  <Field label="Cut Off Físico" name="cut_off_fisico" type="datetime-local" value={form.cut_off_fisico} onChange={handleInput} />
+                  <Field label="Depot de Retiro" name="depot_de_retiro" value={form.depot_de_retiro} onChange={handleInput} />
+                  <Field label="Almacén / Terminal Portuario" name="almacen_terminal_portuario" value={form.almacen_terminal_portuario} onChange={handleInput} />
+                  <Field label="Marca" name="marca" value={form.marca} onChange={handleInput} />
+                  <Field label="Tipo De Caja" name="tipo_de_caja" value={form.tipo_de_caja} onChange={handleInput} />
+                  <Field label="Tipo De Embarque" name="tipo_de_embarque" value={form.tipo_de_embarque} onChange={handleInput} />
+                  <Field label="Cant. De Contenedores" name="cant_contenedores" type="number" onChange={handleInput} />
+                  <Field label="Cajas Por Contenedor" name="cajas_x_cont" type="number" onChange={handleInput} />
+                  <Field label="Cjs.Totales En Contenedores" name="cajas_totales_cont" type="number" value={form.cajas_totales_cont} onChange={handleInput} />
+                  <Field label="Cant. De Pallets" name="cant_pallets" type="number" onChange={handleInput} />
+                  <Field label="Cajas Por Pallet" name="cajas_x_pallet" type="number" onChange={handleInput} />
+                  <Field label="Cjs.Totales De Pallets" name="cajas_totales_pallet" type="number" onChange={handleInput} />
+                  <Field label="Cjs.Totales Al Granel" name="cajas_totales_granel" type="number" onChange={handleInput} />
+                  <Field label="Horas Energía Libre" name="horas_energia_libre" value={form.horas_energia_libre} onChange={handleInput} />
+                  <Field label="Inicio Energía Libre" name="inicio_energia_libre" value={form.inicio_energia_libre} onChange={handleInput} />
+                  <Field label="Cut Off Físico" name="cut_off_fisico" value={form.cut_off_fisico} onChange={handleInput} />
+                  <Field label="Cut Off Docs" name="cut_off_docs" value={form.cut_off_docs} onChange={handleInput} />
+                  <Field label="Días De Detención Libre" name="detencion_libre" value={form.detencion_libre} onChange={handleInput} />
+                  <Field label="Días De Almacenaje Libre" name="almacenaje_libre" value={form.almacenaje_libre} onChange={handleInput} />
+                  <Field label="Observaciones" name="observaciones" value={form.observaciones} onChange={handleInput} />
                 </>
               )}
-              {activeTab === 'carga' && (
+              {activeTab === 'Carga' && (
                 <>
-                  <Field label="Cant. Contenedores" name="cant_contenedores" type="number" value={form.cant_contenedores} onChange={handleInput} />
-                  <Field label="Cjs x Contenedor" name="cajas_x_cont" type="number" value={form.cajas_x_cont} onChange={handleInput} />
-                  <Field label="Total Cjs Cont." name="cajas_totales_cont" value={calculos.cjs_totales_cont} readOnly onChange={handleInput} />
-                  <Field label="Cjs a Granel" name="cajas_totales_granel" type="number" value={form.cajas_totales_granel} onChange={handleInput} />
-                  <div className="border-l border-slate-700 mx-2 hidden md:block"></div>
-                  <Field label="P. Neto x Caja" name="pneto_x_caja" type="number" value={form.pneto_x_caja} onChange={handleInput} />
-                  <Field label="P. Bruto x Caja" name="pbruto_x_caja" type="number" value={form.pbruto_x_caja} onChange={handleInput} />
+                  <Field label="Molecula" name="molecula" value={form.molecula} onChange={handleInput} />
+                  <Field label="Calidad" name="calidad" value={form.calidad} onChange={handleInput} />
+                  <Field label="Pad" name="pad" value={form.pad} onChange={handleInput} />
+                  <Field label="Funda" name="funda" value={form.funda} onChange={handleInput} />
+                  <Field label="Sachet" name="sachet" value={form.sachet} onChange={handleInput} />
+                  <Field label="País De Destino" name="pais_destino" value={form.pais_destino} onChange={handleInput} />
+                  <Field label="Ciudad De Destino" name="ciudad_destino" value={form.ciudad_destino} onChange={handleInput} />
+                  <Field label="Puerto De Destino De Descarga" name="puerto_destino_de_descarga" value={form.puerto_destino_de_descarga} onChange={handleInput} />
+                  <Field label="Destino Final De La Carga" name="destino_final_de_la_carga" value={form.destino_final_de_la_carga} onChange={handleInput} />
+                  <Field label="Orden" name="orden" value={form.orden} onChange={handleInput} />
+                  <Field label="AUCP" name="aucp" value={form.aucp} onChange={handleInput} />
+                  <Field label="DAE" name="dae" value={form.dae} onChange={handleInput} />
+                  <Field label="ETD" name="etd" value={form.etd} onChange={handleInput} />
+                  <Field label="TTE" name="tte" value={form.tte} onChange={handleInput} />
+                  <Field label="ETA" name="eta" value={form.eta} onChange={handleInput} />
                 </>
               )}
-              {activeTab === 'financiero' && (
+              {activeTab === 'Financiero' && (
                 <>
-                  <Field label="Precio x Caja" name="precio_x_caja" type="number" value={form.precio_x_caja} onChange={handleInput} />
-                  <Field label="FOB Manual" name="fob" type="number" value={form.fob} onChange={handleInput} />
                   <Field label="Factura" name="factura" value={form.factura} onChange={handleInput} />
+                  <Field label="BL" name="bl" value={form.bl} onChange={handleInput} />
+                  <Field label="Regularizado" name="regularizado" value={form.regularizado} onChange={handleInput} />
+                  <Field label="Liberación" name="liberacion" value={form.liberacion} onChange={handleInput} />
+                  <Field label="Banco" name="banco" value={form.banco} onChange={handleInput} />
+                  <Field label="Documentos Enviados" name="documentos_enviados" value={form.documentos_enviados} onChange={handleInput} />
+                  <Field label="Precio" name="precio_x_caja" type="number" onChange={handleInput} />
+                  <Field label="FOB" name="fob" type="number" onChange={handleInput} />
+                  <Field label="CFR" name="cfr" type="number" onChange={handleInput} />
                   <SelectField label="Negociación" name="negociacion" value={form.negociacion} onChange={handleInput} options={['FOB', 'CFR', 'CIF']} />
+                  <Field label="Términos De Pago" name="terminos_de_pago" value={form.terminos_de_pago} onChange={handleInput} />
                   <Field label="Banco" name="banco" value={form.banco} onChange={handleInput} />
                 </>
               )}
@@ -291,7 +331,7 @@ export default function DashboardPage() {
 
             <div className="p-4 bg-slate-800/50 border-t border-slate-800 flex justify-between items-center">
               <p className="text-xs text-slate-500 font-mono italic">* Los campos sombreados se calculan automáticamente.</p>
-              <button 
+              <button
                 type="submit" disabled={cargando}
                 className={`${editandoId ? 'bg-amber-600 hover:bg-amber-500' : 'bg-blue-600 hover:bg-blue-500'} text-white px-12 py-3 rounded-lg font-bold transition-all shadow-lg text-sm`}
               >
@@ -305,7 +345,7 @@ export default function DashboardPage() {
       {/* TABLA DE REGISTROS */}
       <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden">
         <div className="p-4 border-b border-slate-800 bg-slate-800/30">
-          <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Registros Recientes</h2>
+          <h2 className="text-sm font-bold text-slate-300 tracking-widest">Registros Recientes</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -325,7 +365,7 @@ export default function DashboardPage() {
                   <td className="p-4 font-bold text-blue-400">{reg.semana}</td>
                   <td className="p-4">
                     <div className="font-medium text-slate-200">{reg.booking}</div>
-                    <div className="text-[10px] text-slate-500">{reg.vessel}</div>
+                    <div className="text-[10px] text-slate-500">{reg.vessel} {reg.voyager}</div>
                   </td>
                   <td className="p-4 font-medium">{reg.cliente}</td>
                   <td className="p-4 text-center font-mono">{(Number(reg.cajas_totales_cont) + Number(reg.cajas_totales_granel)).toLocaleString()}</td>
@@ -345,6 +385,7 @@ export default function DashboardPage() {
     </div>
   );
 
+  {/* Switchea el Sidebar - Renderizado del contenido */ }
   const renderContent = () => {
     switch (activeModule) {
       case 'embarques': return renderEmbarquesModule();
@@ -357,35 +398,36 @@ export default function DashboardPage() {
 
   // --- RETURN PRINCIPAL (ESTE ES EL QUE LIMPIAMOS) ---
   return (
-    
+
     <div className="flex min-h-screen bg-slate-950 text-slate-200">
       {/* SIDEBAR */}
       <aside className={`transition-all duration-300 ease-in-out border-r border-slate-800 flex flex-col sticky top-0 h-screen bg-slate-900/80 backdrop-blur-md 
         ${sidebarOpen ? 'w-64' : 'w-20'}`}>
-        
+
+        {/* Sidebar - Botón para ocultar/mostrar el sidebar y si mostramos el texto */}
         <div className="p-6 border-b border-slate-800 flex justify-between items-center">
           {/* Solo mostramos el texto si está abierto */}
           {sidebarOpen && <h2 className="text-xl font-bold text-blue-400 tracking-tighter italic animate-in fade-in">HF-SYSTEM</h2>}
-          
+
           {/* Botón para Toggle (Ocultar/Mostrar) */}
-          <button 
+          <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-1 hover:bg-slate-800 rounded text-slate-400 transition-colors"
           >
             {sidebarOpen ? '◀' : '▶'}
           </button>
         </div>
-        
+
+        {/* Sidebar - Listado #Menu de Navegación */}
         <nav className="flex-1 p-4 space-y-2">
           {MENU_ITEMS.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveModule(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                activeModule === item.id 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'
-              } ${!sidebarOpen ? 'justify-center' : ''}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeModule === item.id
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'
+                } ${!sidebarOpen ? 'justify-center' : ''}`}
               title={item.label}
             >
               <span className="text-xl">{item.icon}</span>
@@ -395,12 +437,13 @@ export default function DashboardPage() {
           ))}
         </nav>
 
+        {/* #Version de AppWeb - Pie de página del sidebar */}
         <div className="p-4 border-t border-slate-800 text-[10px] text-slate-600 text-center uppercase tracking-widest">
-          {sidebarOpen ? 'v1.0.2 - 2026' : 'v1.0'}
+          {sidebarOpen ? 'v1.0.0 - 2026' : 'v1.0'}
         </div>
       </aside>
 
-      {/* CONTENIDO DINÁMICO */}
+      {/* CONTENIDO DINÁMICO - Contenido del MAIN() */}
       <main className="flex-1 p-6 overflow-y-auto">
         <header className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
           <div>
@@ -423,26 +466,28 @@ export default function DashboardPage() {
     </div>
   );
 }
+
 // --- COMPONENTES ATÓMICOS CORREGIDOS (Sin any) ---
 
 // Componente de campo genérico para el ingreso de datos tipeados, con props tipados y sin uso de any
 function Field({ label, name, type = "text", value, onChange, readOnly }: FieldProps) {
   return (
     <div className="flex flex-col">
-      <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-tighter">{label}</label>
-      <input 
+      <label className="block text-[10px] font-bold text-slate-500 mb-1 tracking-tighter">{label}</label>
+      <input
         type={type} name={name} value={value ?? ""} onChange={onChange} readOnly={readOnly}
         className="w-full bg-slate-900 border border-slate-800 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-white"
       />
     </div>
   );
 }
+
 // Componente de campo genérico para el ingreso de datos enlistados, con props tipados y sin uso de any
 function SelectField({ label, name, value, onChange, options }: SelectFieldProps) {
   return (
     <div className="flex flex-col">
-      <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-tighter">{label}</label>
-      <select 
+      <label className="block text-[10px] font-bold text-slate-500 mb-1 tracking-tighter">{label}</label>
+      <select
         name={name} value={value ?? ""} onChange={onChange}
         className="w-full bg-slate-900 border border-slate-800 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-white appearance-none"
       >

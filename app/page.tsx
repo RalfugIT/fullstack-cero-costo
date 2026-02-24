@@ -91,6 +91,7 @@ interface FieldProps {
   label: string;
   name: string;
   type?: string;
+  step?: string;
   value?: string | number;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   readOnly?: boolean;
@@ -111,7 +112,7 @@ export default function DashboardPage() {
   // ESTADOS PRINCIPALES ---
   const [activeModule, setActiveModule] = useState('embarques');
   const [datos, setDatos] = useState<Embarque[]>([]);
-  const [activeTab, setActiveTab] = useState('comex');
+  const [activeTab, setActiveTab] = useState('Comex');
   const [cargando, setCargando] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
@@ -140,7 +141,12 @@ export default function DashboardPage() {
   const calculos = {
     cjs_totales_cont: Number(form.cant_contenedores) * Number(form.cajas_x_cont),
     cjs_totales_pallet: Number(form.cant_pallets) * Number(form.cajas_x_pallet),
-    get total_general() { return this.cjs_totales_cont + Number(form.cajas_totales_granel); },
+    get total_general() {
+      if (form.tipo_de_embarque === 'Carga Contenerizada') return this.cjs_totales_cont;
+      if (form.tipo_de_embarque === 'Carga Suelta' && subtipoSuelta === 'Paletizada') return this.cjs_totales_pallet;
+      if (form.tipo_de_embarque === 'Carga Suelta' && subtipoSuelta === 'Al Granel') return Number(form.cajas_totales_granel);
+      return 0;
+    },
     get p_neto_total() { return this.total_general * Number(form.pneto_x_caja); },
     get p_bruto_total() { return this.total_general * Number(form.pbruto_x_caja); },
     get total_fob() { return this.total_general * Number(form.precio_x_caja); }
@@ -162,9 +168,17 @@ export default function DashboardPage() {
   // --- TODOS LOS HANDLERS ---
 
   // FUNCIÓN: MANEJAR INPUT ---
+  const INTEGER_FIELDS = ['cant_contenedores', 'cajas_x_cont', 'cant_pallets', 'cajas_x_pallet', 'cajas_totales_granel'];
+  const DECIMAL_FIELDS = ['pneto_x_caja', 'pbruto_x_caja', 'precio_x_caja'];
   const handleInput = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    setForm({ ...form, [name]: type === 'number' ? Number(value) : value });
+    let parsedValue: string | number = value;
+    if (type === 'number') {
+      if (INTEGER_FIELDS.includes(name)) parsedValue = parseInt(value, 10) || 0;
+      else if (DECIMAL_FIELDS.includes(name)) parsedValue = parseFloat(value) || 0;
+      else parsedValue = Number(value);
+    }
+    setForm({ ...form, [name]: parsedValue });
   };
 
   // FUNCIÓN: PREPARAR EDICIÓN ---
@@ -286,7 +300,7 @@ export default function DashboardPage() {
                     name="naviera"
                     value={form.naviera}
                     onChange={handleInput}
-                    options={['Happag LLoyd', 'Maersk', 'Cosco', 'MSC', 'Baltic', 'MSC', 'ONE', 'Seatrade', 'Hamburg Süd']}
+                    options={['Happag LLoyd', 'Maersk', 'Cosco', 'MSC', 'Baltic', 'ONE', 'Seatrade', 'Hamburg Süd']}
                   />
                   <Field label="Cliente" name="cliente" value={form.cliente} onChange={handleInput} />
                   <Field label="Puerto Destino" name="puerto_destino_de_descarga" value={form.puerto_destino_de_descarga} onChange={handleInput} />
@@ -330,20 +344,20 @@ export default function DashboardPage() {
                   )}
                   {form.tipo_de_embarque === 'Carga Contenerizada' && (
                     <>
-                      <Field label="Cant. De Contenedores" name="cant_contenedores" type="number" onChange={handleInput} />
-                      <Field label="Cajas Por Contenedor" name="cajas_x_cont" type="number" onChange={handleInput} />
-                      <Field label="Cjs.Totales En Contenedores" name="cajas_totales_cont" type="number" value={form.cajas_totales_cont} onChange={handleInput} />
+                      <Field label="Cant. De Contenedores" name="cant_contenedores" type="number" step="1" value={form.cant_contenedores} onChange={handleInput} />
+                      <Field label="Cajas Por Contenedor" name="cajas_x_cont" type="number" step="1" value={form.cajas_x_cont} onChange={handleInput} />
+                      <Field label="Cjs.Totales En Contenedores" name="cajas_totales_cont" type="number" value={calculos.cjs_totales_cont} readOnly onChange={handleInput} />
                     </>
                   )}
                   {form.tipo_de_embarque === 'Carga Suelta' && subtipoSuelta === 'Paletizada' && (
                     <>
-                      <Field label="Cant. De Pallets" name="cant_pallets" type="number" onChange={handleInput} />
-                      <Field label="Cajas Por Pallet" name="cajas_x_pallet" type="number" onChange={handleInput} />
-                      <Field label="Cjs.Totales De Pallets" name="cajas_totales_pallet" type="number" onChange={handleInput} />
+                      <Field label="Cant. De Pallets" name="cant_pallets" type="number" step="1" value={form.cant_pallets} onChange={handleInput} />
+                      <Field label="Cajas Por Pallet" name="cajas_x_pallet" type="number" step="1" value={form.cajas_x_pallet} onChange={handleInput} />
+                      <Field label="Cjs.Totales De Pallets" name="cajas_totales_pallet" type="number" value={calculos.cjs_totales_pallet} readOnly onChange={handleInput} />
                     </>
                   )}
                   {form.tipo_de_embarque === 'Carga Suelta' && subtipoSuelta === 'Al Granel' && (
-                    <Field label="Cjs.Totales Al Granel" name="cajas_totales_granel" type="number" onChange={handleInput} />
+                    <Field label="Cjs.Totales Al Granel" name="cajas_totales_granel" type="number" step="1" value={form.cajas_totales_granel} onChange={handleInput} />
                   )}
                   <Field label="Horas Energía Libre" name="horas_energia_libre" value={form.horas_energia_libre} onChange={handleInput} />
                   <Field label="Inicio Energía Libre" name="inicio_energia_libre" value={form.inicio_energia_libre} onChange={handleInput} />
@@ -381,9 +395,9 @@ export default function DashboardPage() {
                   <Field label="Liberación" name="liberacion" value={form.liberacion} onChange={handleInput} />
                   <Field label="Banco" name="banco" value={form.banco} onChange={handleInput} />
                   <Field label="Documentos Enviados" name="documentos_enviados" value={form.documentos_enviados} onChange={handleInput} />
-                  <Field label="Precio" name="precio_x_caja" type="number" onChange={handleInput} />
-                  <Field label="FOB" name="fob" type="number" onChange={handleInput} />
-                  <Field label="CFR" name="cfr" type="number" onChange={handleInput} />
+                  <Field label="Precio" name="precio_x_caja" type="number" step="0.01" value={form.precio_x_caja} onChange={handleInput} />
+                  <Field label="FOB" name="fob" type="number" value={form.fob} onChange={handleInput} />
+                  <Field label="CFR" name="cfr" type="number" value={form.cfr} onChange={handleInput} />
                   <SelectField label="Negociación" name="negociacion" value={form.negociacion} onChange={handleInput} options={['FOB', 'CFR', 'CIF']} />
                   <Field label="Términos De Pago" name="terminos_de_pago" value={form.terminos_de_pago} onChange={handleInput} />
                   <Field label="Banco" name="banco" value={form.banco} onChange={handleInput} />
@@ -572,12 +586,12 @@ export default function DashboardPage() {
 // --- COMPONENTES ATÓMICOS CORREGIDOS (Sin any) ---
 
 // Componente de campo genérico para el ingreso de datos tipeados, con props tipados y sin uso de any
-function Field({ label, name, type = "text", value, onChange, readOnly }: FieldProps) {
+function Field({ label, name, type = "text", step, value, onChange, readOnly }: FieldProps) {
   return (
     <div className="flex flex-col">
       <label className="block text-[10px] font-bold text-slate-500 mb-1 tracking-tighter">{label}</label>
       <input
-        type={type} name={name} value={value ?? ""} onChange={onChange} readOnly={readOnly}
+        type={type} name={name} value={value ?? ""} onChange={onChange} readOnly={readOnly} step={step}
         className="w-full bg-slate-900 border border-slate-800 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-white"
       />
     </div>

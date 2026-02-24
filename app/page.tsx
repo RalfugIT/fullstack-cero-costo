@@ -106,6 +106,31 @@ interface SelectFieldProps {
   options: string[];
 }
 
+// --- HELPERS DE FECHA ---
+// Convierte "YYYY-MM-DDTHH:MM" → "DD/MM/YYYY HH:MM"
+function isoToDisplay(iso: string): string {
+  if (!iso) return '';
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
+  if (!match) return iso;
+  return `${match[3]}/${match[2]}/${match[1]} ${match[4]}`;
+}
+// Convierte "DD/MM/YYYY HH:MM" → "YYYY-MM-DDTHH:MM"
+function displayToIso(display: string): string {
+  if (!display) return '';
+  const match = display.match(/^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}:\d{2})$/);
+  if (!match) return '';
+  return `${match[3]}-${match[2]}-${match[1]}T${match[4]}`;
+}
+// Formatea un objeto Date a "DD/MM/YYYY HH:MM" (tiempo local)
+function dateToDisplay(date: Date): string {
+  const d = String(date.getDate()).padStart(2, '0');
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const y = date.getFullYear();
+  const h = String(date.getHours()).padStart(2, '0');
+  const mi = String(date.getMinutes()).padStart(2, '0');
+  return `${d}/${m}/${y} ${h}:${mi}`;
+}
+
 // --- COMPONENTE PRINCIPAL ---
 export default function DashboardPage() {
 
@@ -142,14 +167,22 @@ export default function DashboardPage() {
     cjs_totales_cont: Number(form.cant_contenedores) * Number(form.cajas_x_cont),
     cjs_totales_pallet: Number(form.cant_pallets) * Number(form.cajas_x_pallet),
     get total_general() {
-      if (form.tipo_de_embarque === 'Carga Contenerizada') return this.cjs_totales_cont;
-      if (form.tipo_de_embarque === 'Carga Suelta' && subtipoSuelta === 'Paletizada') return this.cjs_totales_pallet;
-      if (form.tipo_de_embarque === 'Carga Suelta' && subtipoSuelta === 'Al Granel') return Number(form.cajas_totales_granel);
+      if (form.tipo_de_embarque === 'CARGA CONTENERIZADA') return this.cjs_totales_cont;
+      if (form.tipo_de_embarque === 'CARGA SUELTA' && subtipoSuelta === 'PALETIZADA') return this.cjs_totales_pallet;
+      if (form.tipo_de_embarque === 'CARGA SUELTA' && subtipoSuelta === 'AL GRANEL') return Number(form.cajas_totales_granel);
       return 0;
     },
     get p_neto_total() { return this.total_general * Number(form.pneto_x_caja); },
     get p_bruto_total() { return this.total_general * Number(form.pbruto_x_caja); },
-    get total_fob() { return this.total_general * Number(form.precio_x_caja); }
+    get total_fob() { return this.total_general * Number(form.precio_x_caja); },
+    // inicio_energia_libre = cut_off_fisico - horas_energia_libre (horas)
+    get inicio_energia_libre_calc(): string {
+      if (!form.cut_off_fisico) return '';
+      const date = new Date(form.cut_off_fisico); // ISO format stored internally
+      if (isNaN(date.getTime())) return '';
+      date.setHours(date.getHours() - Number(form.horas_energia_libre));
+      return dateToDisplay(date);
+    }
   };
 
   // --- EFECTOS Y FETCH ---
@@ -183,7 +216,12 @@ export default function DashboardPage() {
 
   // FUNCIÓN: PREPARAR EDICIÓN ---
   const prepararEdicion = (reg: Embarque) => {
-    setForm({ ...reg } as Embarque);
+    setForm({
+      ...reg,
+      // Convertir fechas guardadas en DD/MM/YYYY HH:MM de vuelta a ISO para el datetime-local picker
+      cut_off_fisico: displayToIso(reg.cut_off_fisico),
+      cut_off_docs: displayToIso(reg.cut_off_docs),
+    } as Embarque);
     setEditandoId(reg.id_embarque);
     setCollapsed(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -196,6 +234,11 @@ export default function DashboardPage() {
 
     const datosParaGuardar = {
       ...form,
+      // Fechas: convertir de ISO interno a DD/MM/AAAA HH:MM para la BD
+      cut_off_fisico: isoToDisplay(form.cut_off_fisico),
+      cut_off_docs: isoToDisplay(form.cut_off_docs),
+      // Campos calculados
+      inicio_energia_libre: calculos.inicio_energia_libre_calc,
       cajas_totales_cont: calculos.cjs_totales_cont,
       cajas_totales_pallet: calculos.cjs_totales_pallet,
       pneto_total: calculos.p_neto_total,
@@ -278,91 +321,61 @@ export default function DashboardPage() {
             <div className="p-6 grid grid-cols-1 md:grid-cols-5 gap-5">
               {activeTab === 'Comex' && (
                 <>
-                  <SelectField
-                    label="Agencia"
-                    name="agencia_exportadora"
-                    value={form.agencia_exportadora}
-                    onChange={handleInput}
-                    options={['HugoFruit', 'Fresh-Up']}
-                  />
-                  <SelectField
-                    label="Semana"
-                    name="semana"
-                    value={form.semana}
-                    onChange={handleInput}
+                  <SelectField label="Agencia" name="agencia_exportadora" value={form.agencia_exportadora} onChange={handleInput}
+                    options={['HugoFruit', 'Fresh-Up']} />
+                  <SelectField label="Semana" name="semana" value={form.semana} onChange={handleInput}
                     options={['2026-09', '2026-10', '2026-11', '2026-12']}
                   />
                   <Field label="Booking" name="booking" value={form.booking} onChange={handleInput} />
                   <Field label="Nave" name="vessel" value={form.vessel} onChange={handleInput} />
                   <Field label="Voyager" name="voyager" value={form.voyager} onChange={handleInput} />
-                  <SelectField
-                    label="Naviera"
-                    name="naviera"
-                    value={form.naviera}
-                    onChange={handleInput}
-                    options={['Happag LLoyd', 'Maersk', 'Cosco', 'MSC', 'Baltic', 'ONE', 'Seatrade', 'Hamburg Süd']}
+                  <SelectField label="Naviera" name="naviera" value={form.naviera} onChange={handleInput}
+                    options={['HAPPAG LLOYD', 'MAERSK', 'COSCO', 'MSC', 'BALTIC', 'ONE', 'SEATRADE', 'HAMBURG SÜD']}
                   />
                   <Field label="Cliente" name="cliente" value={form.cliente} onChange={handleInput} />
                   <Field label="Puerto Destino" name="puerto_destino_de_descarga" value={form.puerto_destino_de_descarga} onChange={handleInput} />
-                  <SelectField
-                    label="Depot de Retiro"
-                    name="depot_de_retiro"
-                    value={form.depot_de_retiro}
-                    onChange={handleInput}
-                    options={['Aretina', 'Blasti', 'Depconsa', 'Farbem Norte', 'Farbem Sur', 'Medlog Norte', 'Medlog Sur', 'Opacif Norte', 'Opacif Sur', 'PRCS', 'RFS', 'Tasesa', 'Tercon']}
+                  <SelectField label="Depot de Retiro" name="depot_de_retiro" value={form.depot_de_retiro} onChange={handleInput}
+                    options={['ARETINA', 'BLASTI', 'DEPCONSA', 'FARBEM NORTE', 'FARBEM SUR', 'MEDLOG NORTE',
+                      'MEDLOG SUR', 'OPACIF NORTE', 'OPACIF SUR', 'PRCS', 'RFS', 'TASAESA', 'TERCON']}
                   />
-                  <SelectField
-                    label="Almacén / Terminal Portuario"
-                    name="almacen_terminal_portuario"
-                    value={form.almacen_terminal_portuario}
-                    onChange={handleInput}
-                    options={['DP World', 'TPG', 'Contecon', 'Naportec', 'Yilport', 'Fertisa']}
+                  <SelectField label="Almacén / Terminal Portuario" name="almacen_terminal_portuario" value={form.almacen_terminal_portuario} onChange={handleInput}
+                    options={['DP WORLD', 'TPG', 'CONTECON', 'NAPORTEC', 'YILPORT', 'FERTISA']}
                   />
-                  <Field label="Marca" name="marca" value={form.marca} onChange={handleInput} />
-                  <SelectField
-                    label="Tipo De Caja"
-                    name="tipo_de_caja"
-                    value={form.tipo_de_caja}
-                    onChange={handleInput}
-                    options={['208', '209', '22XU', 'SF101', 'Extrapesada']}
+                  <SelectField label="Marca" name="marca" value={form.marca} onChange={handleInput}
+                    options={['HF AZUL', 'HF LILA', 'HF ROJA', 'GOLDEN B', 'SPAR', 'FRESH-UP', 'ECUALAS', 'AH-TROS', 'SHARBATLY']}
                   />
-                  <SelectField
-                    label="Tipo De Embarque"
-                    name="tipo_de_embarque"
-                    value={form.tipo_de_embarque}
-                    onChange={(e) => { handleInput(e); setSubtipoSuelta(''); }}
-                    options={['Carga Contenerizada', 'Carga Suelta']}
+                  <SelectField label="Tipo De Caja" name="tipo_de_caja" value={form.tipo_de_caja} onChange={handleInput}
+                    options={['208', '209', '22XU', 'SF101', 'EXTRAPESADA']}
                   />
-                  {form.tipo_de_embarque === 'Carga Suelta' && (
-                    <SelectField
-                      label="Tipo De Carga Suelta"
-                      name="subtipo_suelta"
-                      value={subtipoSuelta}
-                      onChange={(e) => setSubtipoSuelta(e.target.value)}
-                      options={['Paletizada', 'Al Granel']}
+                  <SelectField label="Tipo De Embarque" name="tipo_de_embarque" value={form.tipo_de_embarque} onChange={(e) => { handleInput(e); setSubtipoSuelta(''); }}
+                    options={['CARGA CONTENERIZADA', 'CARGA SUELTA']}
+                  />
+                  {form.tipo_de_embarque === 'CARGA SUELTA' && (
+                    <SelectField label="Tipo De Carga Suelta" name="subtipo_suelta" value={subtipoSuelta} onChange={(e) => setSubtipoSuelta(e.target.value)}
+                      options={['PALETIZADA', 'AL GRANEL']}
                     />
                   )}
-                  {form.tipo_de_embarque === 'Carga Contenerizada' && (
+                  {form.tipo_de_embarque === 'CARGA CONTENERIZADA' && (
                     <>
                       <Field label="Cant. De Contenedores" name="cant_contenedores" type="number" step="1" value={form.cant_contenedores} onChange={handleInput} />
                       <Field label="Cajas Por Contenedor" name="cajas_x_cont" type="number" step="1" value={form.cajas_x_cont} onChange={handleInput} />
                       <Field label="Cjs.Totales En Contenedores" name="cajas_totales_cont" type="number" value={calculos.cjs_totales_cont} readOnly onChange={handleInput} />
                     </>
                   )}
-                  {form.tipo_de_embarque === 'Carga Suelta' && subtipoSuelta === 'Paletizada' && (
+                  {form.tipo_de_embarque === 'CARGA SUELTA' && subtipoSuelta === 'PALETIZADA' && (
                     <>
                       <Field label="Cant. De Pallets" name="cant_pallets" type="number" step="1" value={form.cant_pallets} onChange={handleInput} />
                       <Field label="Cajas Por Pallet" name="cajas_x_pallet" type="number" step="1" value={form.cajas_x_pallet} onChange={handleInput} />
                       <Field label="Cjs.Totales De Pallets" name="cajas_totales_pallet" type="number" value={calculos.cjs_totales_pallet} readOnly onChange={handleInput} />
                     </>
                   )}
-                  {form.tipo_de_embarque === 'Carga Suelta' && subtipoSuelta === 'Al Granel' && (
+                  {form.tipo_de_embarque === 'CARGA SUELTA' && subtipoSuelta === 'AL GRANEL' && (
                     <Field label="Cjs.Totales Al Granel" name="cajas_totales_granel" type="number" step="1" value={form.cajas_totales_granel} onChange={handleInput} />
                   )}
-                  <Field label="Horas Energía Libre" name="horas_energia_libre" value={form.horas_energia_libre} onChange={handleInput} />
-                  <Field label="Inicio Energía Libre" name="inicio_energia_libre" value={form.inicio_energia_libre} onChange={handleInput} />
-                  <Field label="Cut Off Físico" name="cut_off_fisico" value={form.cut_off_fisico} onChange={handleInput} />
-                  <Field label="Cut Off Docs" name="cut_off_docs" value={form.cut_off_docs} onChange={handleInput} />
+                  <Field label="Horas Energía Libre" name="horas_energia_libre" type="number" step="1" value={form.horas_energia_libre} onChange={handleInput} />
+                  <Field label="Cut Off Físico" name="cut_off_fisico" type="datetime-local" value={form.cut_off_fisico} onChange={handleInput} />
+                  <Field label="Cut Off Docs" name="cut_off_docs" type="datetime-local" value={form.cut_off_docs} onChange={handleInput} />
+                  <Field label="Inicio Energía Libre" name="inicio_energia_libre" value={calculos.inicio_energia_libre_calc} readOnly onChange={handleInput} />
                   <Field label="Días De Detención Libre" name="detencion_libre" value={form.detencion_libre} onChange={handleInput} />
                   <Field label="Días De Almacenaje Libre" name="almacenaje_libre" value={form.almacenaje_libre} onChange={handleInput} />
                   <Field label="Observaciones" name="observaciones" value={form.observaciones} onChange={handleInput} />
@@ -587,12 +600,13 @@ export default function DashboardPage() {
 
 // Componente de campo genérico para el ingreso de datos tipeados, con props tipados y sin uso de any
 function Field({ label, name, type = "text", step, value, onChange, readOnly }: FieldProps) {
+  const isDate = type === 'datetime-local' || type === 'date';
   return (
     <div className="flex flex-col">
       <label className="block text-[10px] font-bold text-slate-500 mb-1 tracking-tighter">{label}</label>
       <input
         type={type} name={name} value={value ?? ""} onChange={onChange} readOnly={readOnly} step={step}
-        className="w-full bg-slate-900 border border-slate-800 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-white"
+        className={`w-full bg-slate-900 border border-slate-800 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-white${isDate ? '' : ' uppercase'}`}
       />
     </div>
   );
@@ -605,7 +619,7 @@ function SelectField({ label, name, value, onChange, options }: SelectFieldProps
       <label className="block text-[10px] font-bold text-slate-500 mb-1 tracking-tighter">{label}</label>
       <select
         name={name} value={value ?? ""} onChange={onChange}
-        className="w-full bg-slate-900 border border-slate-800 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-white appearance-none"
+        className="w-full bg-slate-900 border border-slate-800 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-white appearance-none uppercase"
       >
         <option value="">Seleccione...</option>
         {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}

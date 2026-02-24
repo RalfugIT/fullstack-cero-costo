@@ -116,6 +116,7 @@ export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [subtipoSuelta, setSubtipoSuelta] = useState('');
 
   const initialFormState: EmbarqueForm = {
     semana: '', booking: '', vessel: '', voyager: '', naviera: '', cliente: '',
@@ -315,16 +316,35 @@ export default function DashboardPage() {
                     label="Tipo De Embarque"
                     name="tipo_de_embarque"
                     value={form.tipo_de_embarque}
-                    onChange={handleInput}
+                    onChange={(e) => { handleInput(e); setSubtipoSuelta(''); }}
                     options={['Carga Contenerizada', 'Carga Suelta']}
                   />
-                  <Field label="Cant. De Contenedores" name="cant_contenedores" type="number" onChange={handleInput} />
-                  <Field label="Cajas Por Contenedor" name="cajas_x_cont" type="number" onChange={handleInput} />
-                  <Field label="Cjs.Totales En Contenedores" name="cajas_totales_cont" type="number" value={form.cajas_totales_cont} onChange={handleInput} />
-                  <Field label="Cant. De Pallets" name="cant_pallets" type="number" onChange={handleInput} />
-                  <Field label="Cajas Por Pallet" name="cajas_x_pallet" type="number" onChange={handleInput} />
-                  <Field label="Cjs.Totales De Pallets" name="cajas_totales_pallet" type="number" onChange={handleInput} />
-                  <Field label="Cjs.Totales Al Granel" name="cajas_totales_granel" type="number" onChange={handleInput} />
+                  {form.tipo_de_embarque === 'Carga Suelta' && (
+                    <SelectField
+                      label="Tipo De Carga Suelta"
+                      name="subtipo_suelta"
+                      value={subtipoSuelta}
+                      onChange={(e) => setSubtipoSuelta(e.target.value)}
+                      options={['Paletizada', 'Al Granel']}
+                    />
+                  )}
+                  {form.tipo_de_embarque === 'Carga Contenerizada' && (
+                    <>
+                      <Field label="Cant. De Contenedores" name="cant_contenedores" type="number" onChange={handleInput} />
+                      <Field label="Cajas Por Contenedor" name="cajas_x_cont" type="number" onChange={handleInput} />
+                      <Field label="Cjs.Totales En Contenedores" name="cajas_totales_cont" type="number" value={form.cajas_totales_cont} onChange={handleInput} />
+                    </>
+                  )}
+                  {form.tipo_de_embarque === 'Carga Suelta' && subtipoSuelta === 'Paletizada' && (
+                    <>
+                      <Field label="Cant. De Pallets" name="cant_pallets" type="number" onChange={handleInput} />
+                      <Field label="Cajas Por Pallet" name="cajas_x_pallet" type="number" onChange={handleInput} />
+                      <Field label="Cjs.Totales De Pallets" name="cajas_totales_pallet" type="number" onChange={handleInput} />
+                    </>
+                  )}
+                  {form.tipo_de_embarque === 'Carga Suelta' && subtipoSuelta === 'Al Granel' && (
+                    <Field label="Cjs.Totales Al Granel" name="cajas_totales_granel" type="number" onChange={handleInput} />
+                  )}
                   <Field label="Horas Energía Libre" name="horas_energia_libre" value={form.horas_energia_libre} onChange={handleInput} />
                   <Field label="Inicio Energía Libre" name="inicio_energia_libre" value={form.inicio_energia_libre} onChange={handleInput} />
                   <Field label="Cut Off Físico" name="cut_off_fisico" value={form.cut_off_fisico} onChange={handleInput} />
@@ -395,9 +415,28 @@ export default function DashboardPage() {
               <tr>
                 <th className="p-4">Semana</th>
                 <th className="p-4">Booking / Nave</th>
-                <th className="p-4">Cliente</th>
+                <th className="p-4">Naviera</th>
+                <th className="p-4 text-center">Cliente</th>
+                <th className="p-4 text-center">Destino</th>
+                <th className="p-4 text-center">Depot</th>
+                <th className="p-4 text-center">Puerto</th>
+                <th className="p-4 text-center">#Contenedores</th>
                 <th className="p-4 text-center">Cajas Totales</th>
-                <th className="p-4 text-center">FOB Est.</th>
+                <th className="p-4 text-center">Marca</th>
+                <th className="p-4 text-center">Tipo</th>
+                <th className="p-4 text-center">Peso Neto</th>
+                <th className="p-4 text-center">Peso Bruto</th>
+                <th className="p-4 text-center">Orden</th>
+                <th className="p-4 text-center">AUCP</th>
+                <th className="p-4 text-center">DAE</th>
+                <th className="p-4 text-center">Estado</th>
+                <th className="p-4 text-center">Cut Off Físico</th>
+                <th className="p-4 text-center">Cut Off Docs</th>
+                <th className="p-4 text-center">Energía Libre (Hrs.)</th>
+                <th className="p-4 text-center">Días Detention</th>
+                <th className="p-4 text-center">Días Almacenaje</th>
+                <th className="p-4 text-center">Agencia Exportadora</th>
+                <th className="p-4 text-center">Observaciones</th>
                 <th className="p-4 text-center">Acciones</th>
               </tr>
             </thead>
@@ -409,10 +448,23 @@ export default function DashboardPage() {
                     <div className="font-medium text-slate-200">{reg.booking}</div>
                     <div className="text-[10px] text-slate-500">{reg.vessel} {reg.voyager}</div>
                   </td>
+                  <td className="p-4 font-medium">{reg.naviera}</td>
                   <td className="p-4 font-medium">{reg.cliente}</td>
-                  <td className="p-4 text-center font-mono">{(Number(reg.cajas_totales_cont) + Number(reg.cajas_totales_granel)).toLocaleString()}</td>
-                  <td className="p-4 text-center text-yellow-500 font-mono">${reg.fob?.toLocaleString()}</td>
-                  <td className="p-4 text-center">
+                  <td className="p-4 font-medium">{reg.puerto_destino_de_descarga}</td>
+                  <td className="p-4 font-medium">{reg.depot_de_retiro}</td>
+                  <td className="p-4 font-medium">{reg.almacen_terminal_portuario}</td>
+                  <td className="p-4 font-medium">{reg.cant_contenedores}</td>
+                  <td className="p-4 font-medium">{reg.cajas_totales_cont}</td>
+                  <td className="p-4 font-medium">{reg.marca}</td>
+                  <td className="p-4 font-medium">{reg.tipo_de_caja}</td>
+                  <td className="p-4 font-medium">{reg.pneto_total}</td>
+                  <td className="p-4 font-medium">{reg.pbruto_total}</td>
+                  <td className="p-4 font-medium">{reg.orden}</td>
+                  <td className="p-4 font-medium">{reg.aucp}</td>
+                  <td className="p-4 font-medium">{reg.naviera}</td>
+                  {/*<td className="p-4 text-center font-mono">{(Number(reg.cajas_totales_cont) + Number(reg.cajas_totales_granel)).toLocaleString()}</td>
+                  <td className="p-4 text-center text-yellow-500 font-mono">${reg.fob?.toLocaleString()}</td>*/}
+                  <td className="p-4 text-center"> {/* Botones de Acciones - Actualización y Eliminación */}
                     <div className="flex justify-center gap-3">
                       <button onClick={() => prepararEdicion(reg)} className="text-blue-400 hover:text-blue-300">Editar</button>
                       <button onClick={() => eliminarEmbarque(reg.id_embarque)} className="text-red-500 hover:text-red-400 font-bold">X</button>

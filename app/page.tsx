@@ -304,8 +304,20 @@ export default function DashboardPage() {
                     options={['DP World', 'TPG', 'Contecon', 'Naportec', 'Yilport', 'Fertisa']}
                   />
                   <Field label="Marca" name="marca" value={form.marca} onChange={handleInput} />
-                  <Field label="Tipo De Caja" name="tipo_de_caja" value={form.tipo_de_caja} onChange={handleInput} />
-                  <Field label="Tipo De Embarque" name="tipo_de_embarque" value={form.tipo_de_embarque} onChange={handleInput} />
+                  <SelectField
+                    label="Tipo De Caja"
+                    name="tipo_de_caja"
+                    value={form.tipo_de_caja}
+                    onChange={handleInput}
+                    options={['208', '209', '22XU', 'SF101', 'Extrapesada']}
+                  />
+                  <SelectField
+                    label="Tipo De Embarque"
+                    name="tipo_de_embarque"
+                    value={form.tipo_de_embarque}
+                    onChange={handleInput}
+                    options={['Carga Contenerizada', 'Carga Suelta']}
+                  />
                   <Field label="Cant. De Contenedores" name="cant_contenedores" type="number" onChange={handleInput} />
                   <Field label="Cajas Por Contenedor" name="cajas_x_cont" type="number" onChange={handleInput} />
                   <Field label="Cjs.Totales En Contenedores" name="cajas_totales_cont" type="number" value={form.cajas_totales_cont} onChange={handleInput} />

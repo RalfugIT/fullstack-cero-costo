@@ -263,16 +263,46 @@ export default function DashboardPage() {
             <div className="p-6 grid grid-cols-1 md:grid-cols-5 gap-5">
               {activeTab === 'Comex' && (
                 <>
-                  <SelectField label="Agencia" name="agencia_exportadora" value={form.agencia_exportadora} onChange={handleInput} options={['HugoFruit', 'Fresh-Up']} />
-                  <SelectField label="Semana" name="semana" value={form.semana} onChange={handleInput} options={['2026-09', '2026-10', '2026-11', '2026-12']} />
+                  <SelectField
+                    label="Agencia"
+                    name="agencia_exportadora"
+                    value={form.agencia_exportadora}
+                    onChange={handleInput}
+                    options={['HugoFruit', 'Fresh-Up']}
+                  />
+                  <SelectField
+                    label="Semana"
+                    name="semana"
+                    value={form.semana}
+                    onChange={handleInput}
+                    options={['2026-09', '2026-10', '2026-11', '2026-12']}
+                  />
                   <Field label="Booking" name="booking" value={form.booking} onChange={handleInput} />
                   <Field label="Nave" name="vessel" value={form.vessel} onChange={handleInput} />
                   <Field label="Voyager" name="voyager" value={form.voyager} onChange={handleInput} />
-                  <Field label="Naviera" name="naviera" value={form.naviera} onChange={handleInput} />
+                  <SelectField
+                    label="Naviera"
+                    name="naviera"
+                    value={form.naviera}
+                    onChange={handleInput}
+                    options={['Happag LLoyd', 'Maersk', 'Cosco', 'MSC', 'Baltic', 'MSC', 'ONE', 'Seatrade', 'Hamburg Süd']}
+                  />
                   <Field label="Cliente" name="cliente" value={form.cliente} onChange={handleInput} />
                   <Field label="Puerto Destino" name="puerto_destino_de_descarga" value={form.puerto_destino_de_descarga} onChange={handleInput} />
-                  <Field label="Depot de Retiro" name="depot_de_retiro" value={form.depot_de_retiro} onChange={handleInput} />
-                  <Field label="Almacén / Terminal Portuario" name="almacen_terminal_portuario" value={form.almacen_terminal_portuario} onChange={handleInput} />
+                  <SelectField
+                    label="Depot de Retiro"
+                    name="depot_de_retiro"
+                    value={form.depot_de_retiro}
+                    onChange={handleInput}
+                    options={['Aretina', 'Blasti', 'Depconsa', 'Farbem Norte', 'Farbem Sur', 'Medlog Norte', 'Medlog Sur', 'Opacif Norte', 'Opacif Sur', 'PRCS', 'RFS', 'Tasesa', 'Tercon']}
+                  />
+                  <SelectField
+                    label="Almacén / Terminal Portuario"
+                    name="almacen_terminal_portuario"
+                    value={form.almacen_terminal_portuario}
+                    onChange={handleInput}
+                    options={['DP World', 'TPG', 'Contecon', 'Naportec', 'Yilport', 'Fertisa']}
+                  />
                   <Field label="Marca" name="marca" value={form.marca} onChange={handleInput} />
                   <Field label="Tipo De Caja" name="tipo_de_caja" value={form.tipo_de_caja} onChange={handleInput} />
                   <Field label="Tipo De Embarque" name="tipo_de_embarque" value={form.tipo_de_embarque} onChange={handleInput} />

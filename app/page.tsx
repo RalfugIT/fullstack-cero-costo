@@ -461,7 +461,15 @@ export default function DashboardPage() {
                   <td className="p-4 font-medium">{reg.pbruto_total}</td>
                   <td className="p-4 font-medium">{reg.orden}</td>
                   <td className="p-4 font-medium">{reg.aucp}</td>
-                  <td className="p-4 font-medium">{reg.naviera}</td>
+                  <td className="p-4 font-medium">{reg.dae}</td>
+                  <td className="p-4 font-medium">{reg.regularizado}</td>
+                  <td className="p-4 font-medium">{reg.cut_off_fisico}</td>
+                  <td className="p-4 font-medium">{reg.cut_off_docs}</td>
+                  <td className="p-4 font-medium">{reg.horas_energia_libre}</td>
+                  <td className="p-4 font-medium">{reg.detencion_libre}</td>
+                  <td className="p-4 font-medium">{reg.almacenaje_libre}</td>
+                  <td className="p-4 font-medium">{reg.agencia_exportadora}</td>
+                  <td className="p-4 font-medium">{reg.observaciones}</td>
                   {/*<td className="p-4 text-center font-mono">{(Number(reg.cajas_totales_cont) + Number(reg.cajas_totales_granel)).toLocaleString()}</td>
                   <td className="p-4 text-center text-yellow-500 font-mono">${reg.fob?.toLocaleString()}</td>*/}
                   <td className="p-4 text-center"> {/* Botones de Acciones - Actualización y Eliminación */}

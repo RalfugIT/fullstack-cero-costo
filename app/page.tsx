@@ -74,11 +74,11 @@ interface Embarque {
   liberacion: string;
   negociacion: string;
   terminos_de_pago: string;
-  fob: number;
-  cfr: number;
+  incoterm: string;
   banco: string;
   documentos_enviados: string;
   area_departamento: string;
+  incoterm_facturado: number;
 }
 
 // Tipo para el formulario, omitiendo el id_embarque que es autogenerado, pero permitiendo su inclusión para edición
@@ -107,17 +107,26 @@ interface SelectFieldProps {
 }
 
 // --- HELPERS DE FECHA ---
-// Convierte "YYYY-MM-DDTHH:MM" → "DD/MM/YYYY HH:MM"
-function isoToDisplay(iso: string): string {
-  if (!iso) return '';
-  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
-  if (!match) return iso;
-  return `${match[3]}/${match[2]}/${match[1]} ${match[4]}`;
+// Convierte cualquier formato → "DD/MM/YYYY HH:MM" para mostrar en tabla/UI
+// Soporta: ISO con/sin timezone (YYYY-MM-DDTHH:MM...) y ya formateado (DD/MM/YYYY HH:MM)
+function isoToDisplay(value: string): string {
+  if (!value) return '';
+  // Formato ISO: YYYY-MM-DDTHH:MM (con o sin timezone/segundos)
+  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
+  if (isoMatch) return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]} ${isoMatch[4]}`;
+  // Ya está en DD/MM/YYYY HH:MM → devolver tal cual (ignora segundos extras)
+  const displayMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}:\d{2})/);
+  if (displayMatch) return `${displayMatch[1]}/${displayMatch[2]}/${displayMatch[3]} ${displayMatch[4]}`;
+  return value;
 }
-// Convierte "DD/MM/YYYY HH:MM" → "YYYY-MM-DDTHH:MM"
-function displayToIso(display: string): string {
-  if (!display) return '';
-  const match = display.match(/^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}:\d{2})$/);
+// Convierte cualquier formato → "YYYY-MM-DDTHH:MM" para el input datetime-local
+// Soporta: ISO válido (pass-through), DD/MM/YYYY HH:MM (con o sin segundos)
+function displayToIso(value: string): string {
+  if (!value) return '';
+  // Ya es ISO (YYYY-MM-DDTHH:MM...) → recortar a 16 chars para datetime-local
+  if (/^\d{4}-\d{2}-\d{2}T/.test(value)) return value.substring(0, 16);
+  // DD/MM/YYYY HH:MM ($ removido para tolerar ":SS" u otros extras al final)
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}:\d{2})/);
   if (!match) return '';
   return `${match[3]}-${match[2]}-${match[1]}T${match[4]}`;
 }
@@ -156,8 +165,8 @@ export default function DashboardPage() {
     cut_off_docs: '', detencion_libre: '', almacenaje_libre: '',
     agencia_exportadora: '', observaciones: '', orden: '', aucp: '', dae: '',
     regularizado: '', etd: '', tte: '', eta: '', precio_x_caja: 0, factura: '',
-    bl: '', liberacion: '', negociacion: '', terminos_de_pago: '', fob: 0,
-    cfr: 0, banco: '', documentos_enviados: '', area_departamento: ''
+    bl: '', liberacion: '', negociacion: '', terminos_de_pago: '', incoterm: '',
+    banco: '', documentos_enviados: '', area_departamento: '', incoterm_facturado: 0
   };
 
   const [form, setForm] = useState<EmbarqueForm>(initialFormState);
@@ -174,7 +183,7 @@ export default function DashboardPage() {
     },
     get p_neto_total() { return this.total_general * Number(form.pneto_x_caja); },
     get p_bruto_total() { return this.total_general * Number(form.pbruto_x_caja); },
-    get total_fob() { return this.total_general * Number(form.precio_x_caja); },
+    get incoterm_facturado() { return this.total_general * Number(form.precio_x_caja); },
     // inicio_energia_libre = cut_off_fisico - horas_energia_libre (horas)
     get inicio_energia_libre_calc(): string {
       if (!form.cut_off_fisico) return '';
@@ -218,7 +227,7 @@ export default function DashboardPage() {
   const prepararEdicion = (reg: Embarque) => {
     setForm({
       ...reg,
-      // Convertir fechas guardadas en DD/MM/YYYY HH:MM de vuelta a ISO para el datetime-local picker
+      // Supabase devuelve timestamps en ISO → recortamos a YYYY-MM-DDTHH:MM para datetime-local
       cut_off_fisico: displayToIso(reg.cut_off_fisico),
       cut_off_docs: displayToIso(reg.cut_off_docs),
     } as Embarque);
@@ -234,16 +243,17 @@ export default function DashboardPage() {
 
     const datosParaGuardar = {
       ...form,
-      // Fechas: convertir de ISO interno a DD/MM/AAAA HH:MM para la BD
-      cut_off_fisico: isoToDisplay(form.cut_off_fisico),
-      cut_off_docs: isoToDisplay(form.cut_off_docs),
-      // Campos calculados
+      // Fechas de tipo timestamp: guardar en ISO (YYYY-MM-DDTHH:MM) para que Postgres las interprete correctamente.
+      // NO usar isoToDisplay aquí — Postgres en DateStyle MDY interpreta DD/MM como MM/DD, invirtiendo mes y día.
+      cut_off_fisico: form.cut_off_fisico || null,
+      cut_off_docs: form.cut_off_docs || null,
+      // inicio_energia_libre es calculado y se muestra como texto, guardar en display format
       inicio_energia_libre: calculos.inicio_energia_libre_calc,
       cajas_totales_cont: calculos.cjs_totales_cont,
       cajas_totales_pallet: calculos.cjs_totales_pallet,
       pneto_total: calculos.p_neto_total,
       pbruto_total: calculos.p_bruto_total,
-      fob: form.fob || calculos.total_fob
+      incoterm_facturado: form.incoterm_facturado || calculos.incoterm_facturado
     };
 
     // Corrección del error de Timestamp: Convertimos "" a null
@@ -282,7 +292,7 @@ export default function DashboardPage() {
       <form onSubmit={guardarEmbarque} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl mb-10">
         <div className="flex bg-slate-800/50 items-center justify-between border-b border-slate-700">
           <div className="flex">
-            {['Comex', 'Carga', 'Financiero'].map((tab) => (
+            {['Comex', 'Carga', 'Incoterms'].map((tab) => (
               <button
                 key={tab} type="button" onClick={() => setActiveTab(tab)}
                 className={`px-8 py-4 text-xs font-bold tracking-wider transition-all ${activeTab === tab ? 'bg-blue-600 text-white shadow-inner' : 'text-slate-400 hover:bg-slate-700'}`}
@@ -301,20 +311,20 @@ export default function DashboardPage() {
             {/* DASHBOARD DE CÁLCULOS RÁPIDOS */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1 bg-slate-800/30 border-b border-slate-800">
               <div className="p-4">
-                <p className="text-[10px] text-slate-500 font-bold uppercase">Total Cajas</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Cliente</p>
+                <p className="text-xl font-mono text-emerald-400">{form.cliente}</p>
+              </div>
+              <div className="p-4">
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Total Cajas en este Embarque</p>
                 <p className="text-xl font-mono text-blue-400">{calculos.total_general.toLocaleString()}</p>
               </div>
               <div className="p-4">
-                <p className="text-[10px] text-slate-500 font-bold uppercase">Peso Neto (Kg)</p>
-                <p className="text-xl font-mono text-emerald-400">{calculos.p_neto_total.toLocaleString()}</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Cut Off</p>
+                <p className="text-xl font-mono text-orange-400">{isoToDisplay(form.cut_off_fisico)}</p>
               </div>
               <div className="p-4">
-                <p className="text-[10px] text-slate-500 font-bold uppercase">Peso Bruto (Kg)</p>
-                <p className="text-xl font-mono text-orange-400">{calculos.p_bruto_total.toLocaleString()}</p>
-              </div>
-              <div className="p-4">
-                <p className="text-[10px] text-slate-500 font-bold uppercase">Valor FOB Est.</p>
-                <p className="text-xl font-mono text-yellow-500">${calculos.total_fob.toLocaleString()}</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Incoterm Facturado</p>
+                <p className="text-xl font-mono text-yellow-500">${calculos.incoterm_facturado.toLocaleString()}</p>
               </div>
             </div>
 
@@ -388,30 +398,34 @@ export default function DashboardPage() {
                   <Field label="Pad" name="pad" value={form.pad} onChange={handleInput} />
                   <Field label="Funda" name="funda" value={form.funda} onChange={handleInput} />
                   <Field label="Sachet" name="sachet" value={form.sachet} onChange={handleInput} />
+                  <Field label="Peso Neto x Caja" name="pneto_x_caja" value={form.pneto_x_caja} onChange={handleInput} />
+                  <Field label="Peso Neto Total" name="pneto_total" type="number" value={calculos.p_neto_total} onChange={handleInput} />
+                  <Field label="Peso Bruto x Caja" name="pbruto_x_caja" value={form.pbruto_x_caja} onChange={handleInput} />
+                  <Field label="Peso Bruto Total" name="pbruto_total" type="number" value={calculos.p_bruto_total} onChange={handleInput} />
                   <Field label="País De Destino" name="pais_destino" value={form.pais_destino} onChange={handleInput} />
                   <Field label="Ciudad De Destino" name="ciudad_destino" value={form.ciudad_destino} onChange={handleInput} />
                   <Field label="Puerto De Destino De Descarga" name="puerto_destino_de_descarga" value={form.puerto_destino_de_descarga} onChange={handleInput} />
                   <Field label="Destino Final De La Carga" name="destino_final_de_la_carga" value={form.destino_final_de_la_carga} onChange={handleInput} />
+                </>
+              )}
+              {activeTab === 'Incoterms' && (
+                <>
                   <Field label="Orden" name="orden" value={form.orden} onChange={handleInput} />
                   <Field label="AUCP" name="aucp" value={form.aucp} onChange={handleInput} />
                   <Field label="DAE" name="dae" value={form.dae} onChange={handleInput} />
                   <Field label="ETD" name="etd" value={form.etd} onChange={handleInput} />
                   <Field label="TTE" name="tte" value={form.tte} onChange={handleInput} />
                   <Field label="ETA" name="eta" value={form.eta} onChange={handleInput} />
-                </>
-              )}
-              {activeTab === 'Financiero' && (
-                <>
                   <Field label="Factura" name="factura" value={form.factura} onChange={handleInput} />
                   <Field label="BL" name="bl" value={form.bl} onChange={handleInput} />
                   <Field label="Regularizado" name="regularizado" value={form.regularizado} onChange={handleInput} />
                   <Field label="Liberación" name="liberacion" value={form.liberacion} onChange={handleInput} />
                   <Field label="Banco" name="banco" value={form.banco} onChange={handleInput} />
-                  <Field label="Documentos Enviados" name="documentos_enviados" value={form.documentos_enviados} onChange={handleInput} />
+                  <Field label="Documentos Enviados" name="documentos_enviados" type="datetime-local" value={form.documentos_enviados} onChange={handleInput} />
                   <Field label="Precio" name="precio_x_caja" type="number" step="0.01" value={form.precio_x_caja} onChange={handleInput} />
-                  <Field label="FOB" name="fob" type="number" value={form.fob} onChange={handleInput} />
-                  <Field label="CFR" name="cfr" type="number" value={form.cfr} onChange={handleInput} />
-                  <SelectField label="Negociación" name="negociacion" value={form.negociacion} onChange={handleInput} options={['FOB', 'CFR', 'CIF']} />
+                  <SelectField label="Negociación" name="negociacion" value={form.negociacion} onChange={handleInput} options={['CONTRATO', 'SPOT']} />
+                  <SelectField label="Incoterms" name="incoterm" value={form.incoterm} onChange={handleInput} options={['FOB', 'CFR', 'CIF']} />
+                  <Field label="Incoterms Facturado" name="incoterm_facturado" type="number" step="0.01" value={calculos.incoterm_facturado} readOnly onChange={handleInput} />
                   <Field label="Términos De Pago" name="terminos_de_pago" value={form.terminos_de_pago} onChange={handleInput} />
                   <Field label="Banco" name="banco" value={form.banco} onChange={handleInput} />
                 </>
@@ -490,15 +504,14 @@ export default function DashboardPage() {
                   <td className="p-4 font-medium">{reg.aucp}</td>
                   <td className="p-4 font-medium">{reg.dae}</td>
                   <td className="p-4 font-medium">{reg.regularizado}</td>
-                  <td className="p-4 font-medium">{reg.cut_off_fisico}</td>
-                  <td className="p-4 font-medium">{reg.cut_off_docs}</td>
+                  <td className="p-4 font-medium">{isoToDisplay(reg.cut_off_fisico)}</td>
+                  <td className="p-4 font-medium">{isoToDisplay(reg.cut_off_docs)}</td>
                   <td className="p-4 font-medium">{reg.horas_energia_libre}</td>
                   <td className="p-4 font-medium">{reg.detencion_libre}</td>
                   <td className="p-4 font-medium">{reg.almacenaje_libre}</td>
                   <td className="p-4 font-medium">{reg.agencia_exportadora}</td>
                   <td className="p-4 font-medium">{reg.observaciones}</td>
-                  {/*<td className="p-4 text-center font-mono">{(Number(reg.cajas_totales_cont) + Number(reg.cajas_totales_granel)).toLocaleString()}</td>
-                  <td className="p-4 text-center text-yellow-500 font-mono">${reg.fob?.toLocaleString()}</td>*/}
+                  {/*<td className="p-4 text-center font-mono">{(Number(reg.cajas_totales_cont) + Number(reg.cajas_totales_granel)).toLocaleString()}</td>*/}
                   <td className="p-4 text-center"> {/* Botones de Acciones - Actualización y Eliminación */}
                     <div className="flex justify-center gap-3">
                       <button onClick={() => prepararEdicion(reg)} className="text-blue-400 hover:text-blue-300">Editar</button>

@@ -1,0 +1,19 @@
+Sugerencia A: Seguridad RLS (En el panel de Supabase)
+Esto no requiere tocar código de Next.js, por lo que es imposible que rompas tu app desde aquí.
+
+Ve a tu tablero de Supabase online.
+
+Busca Authentication > Policies.
+
+Activa "Enable RLS" en la tabla embarques.
+
+Crea una política que diga "Enable read/write access for authenticated users only". Así, si alguien encuentra tu URL de Vercel, no podrá borrar tus datos sin estar logueado.
+
+=============================================================================================================================================================================
+
+Sugerencia B: Manejo de Fechas con date-fns
+En tu código actual, haces cálculos manuales de horas para la energía libre. Esto es arriesgado por los cambios de zona horaria.
+
+Instala la librería: npm install date-fns.
+
+Sustituye tus funciones isoToDisplay y displayToIso por funciones de esta librería, que son mucho más robustas y evitan que un dato se guarde mal en la base de datos.

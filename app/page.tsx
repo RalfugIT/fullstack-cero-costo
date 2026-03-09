@@ -1,13 +1,11 @@
 'use client'
-import { ChangeEvent, useEffect, useState, FormEvent } from 'react';
-import { supabase } from '@/lib/supabase';
 
-// Nueva interfaz/cuerpo para el menú/sidebar
-interface MenuItem {
-  id: string;
-  label: string;
-  icon: string;
-}
+import { isoToDisplay, displayToIso, dateToDisplay } from '@/lib/date-formatter';
+import { ChangeEvent, useEffect, useState, FormEvent } from 'react';
+import { MenuItem, Embarque, EmbarqueForm } from '@/types/embarque';
+import { Field, SelectField } from '@/components/FormFields';
+import { useEmbarques } from '@/hooks/useEmbarques';
+import { EmbarqueTable } from '@/components/EmbarqueTable';
 
 // Definición de los items del menú con íconos representativos
 const MENU_ITEMS: MenuItem[] = [
@@ -20,137 +18,15 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'costos', label: 'Costos Operativos', icon: '💱' },
 ];
 
-// --- INTERFACES (ESTRUCTURAS DE DATOS//CAMPOS Mantenidas y Reforzadas) ---
-
-// Interfaz principal para un embarque, con todos los campos definidos
-interface Embarque {
-  id_embarque: number;
-  semana: string;
-  booking: string;
-  vessel: string;
-  voyager: string;
-  naviera: string;
-  cliente: string;
-  pais_destino: string;
-  ciudad_destino: string;
-  puerto_destino_de_descarga: string;
-  destino_final_de_la_carga: string;
-  depot_de_retiro: string;
-  almacen_terminal_portuario: string;
-  tipo_de_embarque: string;
-  cant_contenedores: number;
-  cajas_x_cont: number;
-  cajas_totales_cont: number;
-  cant_pallets: number;
-  cajas_x_pallet: number;
-  cajas_totales_pallet: number;
-  cajas_totales_granel: number;
-  marca: string;
-  tipo_de_caja: string;
-  calidad: string;
-  pad: string;
-  funda: string;
-  sachet: string;
-  molecula: string;
-  pneto_x_caja: number;
-  pneto_total: number;
-  pbruto_x_caja: number;
-  pbruto_total: number;
-  horas_energia_libre: number;
-  inicio_energia_libre: string;
-  cut_off_fisico: string;
-  cut_off_docs: string;
-  detencion_libre: string;
-  almacenaje_libre: string;
-  agencia_exportadora: string;
-  observaciones: string;
-  orden: string;
-  aucp: string;
-  dae: string;
-  regularizado: string;
-  etd: string;
-  tte: string;
-  eta: string;
-  precio_x_caja: number;
-  factura: string;
-  bl: string;
-  liberacion: string;
-  negociacion: string;
-  terminos_de_pago: string;
-  incoterm: string;
-  banco: string;
-  documentos_enviados: string;
-  area_departamento: string;
-  incoterm_facturado: number;
-}
-
-// Tipo para el formulario, omitiendo el id_embarque que es autogenerado, pero permitiendo su inclusión para edición
-type EmbarqueForm = Omit<Embarque, 'id_embarque'> & {
-  id_embarque?: number;
-};
-
-// Props para los componentes de campos/Input, con tipos específicos y sin any
-interface FieldProps {
-  label: string;
-  name: string;
-  type?: string;
-  step?: string;
-  value?: string | number;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  readOnly?: boolean;
-}
-
-// Props para el componente de campos/InputSelect , con opciones definidas
-interface SelectFieldProps {
-  label: string;
-  name: string;
-  value?: string | number;
-  onChange: (e: ChangeEvent<HTMLSelectElement>) => void;
-  options: string[];
-}
-
-// --- HELPERS DE FECHA ---
-// Convierte cualquier formato → "DD/MM/YYYY HH:MM" para mostrar en tabla/UI
-// Soporta: ISO con/sin timezone (YYYY-MM-DDTHH:MM...) y ya formateado (DD/MM/YYYY HH:MM)
-function isoToDisplay(value: string): string {
-  if (!value) return '';
-  // Formato ISO: YYYY-MM-DDTHH:MM (con o sin timezone/segundos)
-  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
-  if (isoMatch) return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]} ${isoMatch[4]}`;
-  // Ya está en DD/MM/YYYY HH:MM → devolver tal cual (ignora segundos extras)
-  const displayMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}:\d{2})/);
-  if (displayMatch) return `${displayMatch[1]}/${displayMatch[2]}/${displayMatch[3]} ${displayMatch[4]}`;
-  return value;
-}
-// Convierte cualquier formato → "YYYY-MM-DDTHH:MM" para el input datetime-local
-// Soporta: ISO válido (pass-through), DD/MM/YYYY HH:MM (con o sin segundos)
-function displayToIso(value: string): string {
-  if (!value) return '';
-  // Ya es ISO (YYYY-MM-DDTHH:MM...) → recortar a 16 chars para datetime-local
-  if (/^\d{4}-\d{2}-\d{2}T/.test(value)) return value.substring(0, 16);
-  // DD/MM/YYYY HH:MM ($ removido para tolerar ":SS" u otros extras al final)
-  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}:\d{2})/);
-  if (!match) return '';
-  return `${match[3]}-${match[2]}-${match[1]}T${match[4]}`;
-}
-// Formatea un objeto Date a "DD/MM/YYYY HH:MM" (tiempo local)
-function dateToDisplay(date: Date): string {
-  const d = String(date.getDate()).padStart(2, '0');
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const y = date.getFullYear();
-  const h = String(date.getHours()).padStart(2, '0');
-  const mi = String(date.getMinutes()).padStart(2, '0');
-  return `${d}/${m}/${y} ${h}:${mi}`;
-}
-
 // --- COMPONENTE PRINCIPAL ---
 export default function DashboardPage() {
+  // --- USAMOS EL HOOK ---
+  // Traemos los datos y las funciones de acción directamente
+  const { datos, loading, guardarEmbarque, eliminarEmbarque, planificarEmbarque } = useEmbarques();
 
-  // ESTADOS PRINCIPALES ---
+  // --- ESTADOS DE UI (Se mantienen en la página) ---
   const [activeModule, setActiveModule] = useState('embarques');
-  const [datos, setDatos] = useState<Embarque[]>([]);
   const [activeTab, setActiveTab] = useState('Comex');
-  const [cargando, setCargando] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -198,19 +74,6 @@ export default function DashboardPage() {
     }
   };
 
-  // --- EFECTOS Y FETCH ---
-  async function fetchEmbarques() {
-    const { data } = await supabase.from('embarques').select('*').order('id_embarque', { ascending: false });
-    if (data) setDatos(data);
-  }
-  useEffect(() => {
-    fetchEmbarques();
-    const channel = supabase.channel('realtime-nav')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'embarques' }, () => fetchEmbarques())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
   // --- TODOS LOS HANDLERS ---
 
   // FUNCIÓN: MANEJAR INPUT ---
@@ -227,11 +90,12 @@ export default function DashboardPage() {
     setForm({ ...form, [name]: parsedValue });
   };
 
-  // FUNCIÓN: PREPARAR EDICIÓN ---
+  // --- MANEJADORES ACTUALIZADOS ---
+
+  // Preparar edición: Ahora solo maneja el estado visual
   const prepararEdicion = (reg: Embarque) => {
     setForm({
       ...reg,
-      // Supabase devuelve timestamps en ISO → recortamos a YYYY-MM-DDTHH:MM para datetime-local
       cut_off_fisico: displayToIso(reg.cut_off_fisico),
       cut_off_docs: displayToIso(reg.cut_off_docs),
     } as Embarque);
@@ -240,11 +104,11 @@ export default function DashboardPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // FUNCIÓN: GUARDAR EMBARQUE ---
-  async function guardarEmbarque(e: FormEvent) {
+  // Guardar: Llama a la función del Hook
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setCargando(true);
 
+    // Preparamos el payload como antes
     const datosParaGuardar = {
       ...form,
       // Fechas de tipo timestamp: guardar en ISO (YYYY-MM-DDTHH:MM) para que Postgres las interprete correctamente.
@@ -262,15 +126,11 @@ export default function DashboardPage() {
 
     // Corrección del error de Timestamp: Convertimos "" a null
     const payload = Object.fromEntries(
-      Object.entries(datosParaGuardar).map(([key, value]) => [
-        key,
-        value === "" ? null : value
-      ])
+      Object.entries(datosParaGuardar).map(([key, value]) => [key, value === "" ? null : value])
     );
 
-    const { error } = editandoId
-      ? await supabase.from('embarques').update(payload).eq('id_embarque', editandoId)
-      : await supabase.from('embarques').insert([payload]);
+    // Llamada al Hook
+    const { error } = await guardarEmbarque(payload, editandoId);
 
     if (error) {
       alert("Error: " + error.message);
@@ -279,32 +139,27 @@ export default function DashboardPage() {
       setForm(initialFormState);
       setEditandoId(null);
     }
-    setCargando(false);
   }
 
-  // FUNCIÓN: ELIMINAR EMBARQUE ---
-  async function eliminarEmbarque(id: number) {
-    if (!confirm("¿Está seguro de eliminar este embarque?")) return;
-    const { error } = await supabase.from('embarques').delete().eq('id_embarque', id);
+  // Eliminar y Planificar: Ahora son súper simples
+  const handleEliminar = async (id: number) => {
+    if (!confirm("¿Seguro?")) return;
+    const { error } = await eliminarEmbarque(id);
     if (error) alert(error.message);
-  }
+  };
 
-  // FUNCIÓN: PLANIFICAR EMBARQUE ---
-  async function planificarEmbarque(id: number) {
-    if (!confirm("¿Está seguro de planificar este embarque?")) return;
-    const { error } = await supabase.from('embarques').update({ planificado: true }).eq('id_embarque', id);
-    if (error) {
-      alert(error.message);
-    } else {
-      setActiveModule('programacion');
-    }
-  }
+  const handlePlanificar = async (id: number) => {
+    if (!confirm("¿Planificar?")) return;
+    const { error } = await planificarEmbarque(id);
+    if (error) alert(error.message);
+    else setActiveModule('programacion');
+  };
 
   // --- RENDERS POR MÓDULO ---
   const renderEmbarquesModule = () => (
     <div className="animate-in fade-in duration-500">
       {/* FORMULARIO */}
-      <form onSubmit={guardarEmbarque} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl mb-10">
+      <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl mb-10">
         <div className="flex bg-slate-800/50 items-center justify-between border-b border-slate-700">
           <div className="flex">
             {['Comex', 'Carga', 'Incoterms'].map((tab) => (
@@ -450,177 +305,24 @@ export default function DashboardPage() {
             <div className="p-4 bg-slate-800/50 border-t border-slate-800 flex justify-between items-center">
               <p className="text-xs text-slate-500 font-mono italic">* Los campos sombreados se calculan automáticamente.</p>
               <button
-                type="submit" disabled={cargando}
+                type="submit" disabled={loading}
                 className={`${editandoId ? 'bg-amber-600 hover:bg-amber-500' : 'bg-blue-600 hover:bg-blue-500'} text-white px-12 py-3 rounded-lg font-bold transition-all shadow-lg text-sm`}
               >
-                {cargando ? 'PROCESANDO...' : editandoId ? 'ACTUALIZAR REGISTRO' : 'GUARDAR NUEVO EMBARQUE'}
+                {loading ? 'PROCESANDO...' : editandoId ? 'ACTUALIZAR REGISTRO' : 'GUARDAR NUEVO EMBARQUE'}
               </button>
             </div>
           </div>
         )}
       </form>
 
-      {/* TABLA DE REGISTROS */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden">
-        {/* Tabs de vista de tabla */}
-        <div className="flex bg-slate-800/50 items-center justify-between border-b border-slate-700">
-          <div className="flex">
-            {(['resumen', 'completo'] as const).map((tab) => (
-              <button
-                key={tab} type="button" onClick={() => setActiveTableTab(tab)}
-                className={`px-8 py-4 text-xs font-bold tracking-wider uppercase transition-all ${activeTableTab === tab ? 'bg-blue-600 text-white shadow-inner' : 'text-slate-400 hover:bg-slate-700'}`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          <span className="text-[10px] text-slate-500 pr-4 uppercase tracking-widest">{datos.length} registros</span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs" style={{ whiteSpace: "nowrap" }}>
-            <thead className="bg-slate-800 text-slate-400 uppercase">
-              <tr>
-                {/* ── COLUMNAS COMUNES A AMBAS VISTAS ── */}
-                <th className="p-4">Semana</th>
-                <th className="p-4">Booking / Nave</th>
-                <th className="p-4">Naviera</th>
-                <th className="p-4">Cliente</th>
-                <th className="p-4">Destino Puerto</th>
-                <th className="p-4">Depot</th>
-                <th className="p-4">Terminal</th>
-                <th className="p-4 text-center">#Contenedores</th>
-                <th className="p-4 text-center">Cajas Totales</th>
-                <th className="p-4">Marca</th>
-                <th className="p-4">Tipo Caja</th>
-                <th className="p-4 text-center">Peso Neto</th>
-                <th className="p-4 text-center">Peso Bruto</th>
-                <th className="p-4">Orden</th>
-                <th className="p-4">AUCP</th>
-                <th className="p-4">DAE</th>
-                <th className="p-4">Estado</th>
-                <th className="p-4">Cut Off Físico</th>
-                <th className="p-4">Cut Off Docs</th>
-                <th className="p-4 text-center">Energía (Hrs.)</th>
-                <th className="p-4">Días Detention</th>
-                <th className="p-4">Días Almacenaje</th>
-                <th className="p-4">Agencia Export.</th>
-                <th className="p-4">Observaciones</th>
-                {/* ── COLUMNAS EXCLUSIVAS DE COMPLETO ── */}
-                {activeTableTab === 'completo' && (<>
-                  <th className="p-4">País Destino</th>
-                  <th className="p-4">Ciudad Destino</th>
-                  <th className="p-4">Destino Final</th>
-                  <th className="p-4">Tipo Embarque</th>
-                  <th className="p-4 text-center">Cajas x Cont.</th>
-                  <th className="p-4 text-center"># Pallets</th>
-                  <th className="p-4 text-center">Cajas x Pallet</th>
-                  <th className="p-4 text-center">Cjs. Tot. Pallet</th>
-                  <th className="p-4 text-center">Cjs. Tot. Granel</th>
-                  <th className="p-4">Calidad</th>
-                  <th className="p-4">Molécula</th>
-                  <th className="p-4">Pad</th>
-                  <th className="p-4">Funda</th>
-                  <th className="p-4">Sachet</th>
-                  <th className="p-4 text-center">P. Neto x Caja</th>
-                  <th className="p-4 text-center">P. Bruto x Caja</th>
-                  <th className="p-4">Inicio Energ. Libre</th>
-                  <th className="p-4">ETD</th>
-                  <th className="p-4">TTE</th>
-                  <th className="p-4">ETA</th>
-                  <th className="p-4">Factura</th>
-                  <th className="p-4">BL</th>
-                  <th className="p-4">Liberación</th>
-                  <th className="p-4">Negociación</th>
-                  <th className="p-4">Térm. Pago</th>
-                  <th className="p-4">Incoterm</th>
-                  <th className="p-4">Banco</th>
-                  <th className="p-4">Docs. Enviados</th>
-                  <th className="p-4">Área/Depto.</th>
-                  <th className="p-4 text-center">Precio x Caja</th>
-                  <th className="p-4 text-center">Incoterm Facturado</th>
-                </>)}
-                <th className="p-4 text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {datos.map((reg) => (
-                <tr key={reg.id_embarque} className="hover:bg-slate-800/40 transition-colors">
-                  {/* ── CELDAS COMUNES ── */}
-                  <td className="p-4 font-bold text-blue-400">{reg.semana}</td>
-                  <td className="p-4">
-                    <div className="font-medium text-slate-200">{reg.booking}</div>
-                    <div className="text-[10px] text-slate-500">{reg.vessel} {reg.voyager}</div>
-                  </td>
-                  <td className="p-4 font-medium">{reg.naviera}</td>
-                  <td className="p-4 font-medium">{reg.cliente}</td>
-                  <td className="p-4 font-medium">{reg.puerto_destino_de_descarga}</td>
-                  <td className="p-4 font-medium">{reg.depot_de_retiro}</td>
-                  <td className="p-4 font-medium">{reg.almacen_terminal_portuario}</td>
-                  <td className="p-4 text-center font-medium">{reg.cant_contenedores}</td>
-                  <td className="p-4 text-center font-medium">{reg.cajas_totales_cont}</td>
-                  <td className="p-4 font-medium">{reg.marca}</td>
-                  <td className="p-4 font-medium">{reg.tipo_de_caja}</td>
-                  <td className="p-4 text-center font-medium">{reg.pneto_total}</td>
-                  <td className="p-4 text-center font-medium">{reg.pbruto_total}</td>
-                  <td className="p-4 font-medium">{reg.orden}</td>
-                  <td className="p-4 font-medium">{reg.aucp}</td>
-                  <td className="p-4 font-medium">{reg.dae}</td>
-                  <td className="p-4 font-medium">{reg.regularizado}</td>
-                  <td className="p-4 font-medium">{isoToDisplay(reg.cut_off_fisico)}</td>
-                  <td className="p-4 font-medium">{isoToDisplay(reg.cut_off_docs)}</td>
-                  <td className="p-4 text-center font-medium">{reg.horas_energia_libre}</td>
-                  <td className="p-4 font-medium">{reg.detencion_libre}</td>
-                  <td className="p-4 font-medium">{reg.almacenaje_libre}</td>
-                  <td className="p-4 font-medium">{reg.agencia_exportadora}</td>
-                  <td className="p-4 font-medium">{reg.observaciones}</td>
-                  {/* ── CELDAS EXCLUSIVAS DE COMPLETO ── */}
-                  {activeTableTab === 'completo' && (<>
-                    <td className="p-4 font-medium">{reg.pais_destino}</td>
-                    <td className="p-4 font-medium">{reg.ciudad_destino}</td>
-                    <td className="p-4 font-medium">{reg.destino_final_de_la_carga}</td>
-                    <td className="p-4 font-medium">{reg.tipo_de_embarque}</td>
-                    <td className="p-4 text-center font-medium">{reg.cajas_x_cont}</td>
-                    <td className="p-4 text-center font-medium">{reg.cant_pallets}</td>
-                    <td className="p-4 text-center font-medium">{reg.cajas_x_pallet}</td>
-                    <td className="p-4 text-center font-medium">{reg.cajas_totales_pallet}</td>
-                    <td className="p-4 text-center font-medium">{reg.cajas_totales_granel}</td>
-                    <td className="p-4 font-medium">{reg.calidad}</td>
-                    <td className="p-4 font-medium">{reg.molecula}</td>
-                    <td className="p-4 font-medium">{reg.pad}</td>
-                    <td className="p-4 font-medium">{reg.funda}</td>
-                    <td className="p-4 font-medium">{reg.sachet}</td>
-                    <td className="p-4 text-center font-medium">{reg.pneto_x_caja}</td>
-                    <td className="p-4 text-center font-medium">{reg.pbruto_x_caja}</td>
-                    <td className="p-4 font-medium">{reg.inicio_energia_libre}</td>
-                    <td className="p-4 font-medium">{reg.etd}</td>
-                    <td className="p-4 font-medium">{reg.tte}</td>
-                    <td className="p-4 font-medium">{reg.eta}</td>
-                    <td className="p-4 font-medium">{reg.factura}</td>
-                    <td className="p-4 font-medium">{reg.bl}</td>
-                    <td className="p-4 font-medium">{reg.liberacion}</td>
-                    <td className="p-4 font-medium">{reg.negociacion}</td>
-                    <td className="p-4 font-medium">{reg.terminos_de_pago}</td>
-                    <td className="p-4 font-medium">{reg.incoterm}</td>
-                    <td className="p-4 font-medium">{reg.banco}</td>
-                    <td className="p-4 font-medium">{isoToDisplay(reg.documentos_enviados)}</td>
-                    <td className="p-4 font-medium">{reg.area_departamento}</td>
-                    <td className="p-4 text-center font-medium">{reg.precio_x_caja}</td>
-                    <td className="p-4 text-center font-medium">{reg.incoterm_facturado}</td>
-                  </>)}
-                  <td className="p-4 text-center">
-                    <div className="flex justify-center gap-3">
-                      <button onClick={() => prepararEdicion(reg)} className="text-blue-400 hover:text-blue-300">Editar</button>
-                      <button onClick={() => planificarEmbarque(reg.id_embarque)} className="text-green-500 hover:text-green-400 font-bold">Planificar</button>
-                      <button onClick={() => eliminarEmbarque(reg.id_embarque)} className="text-red-500 hover:text-red-400 font-bold">Eliminar</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <EmbarqueTable
+        datos={datos}
+        activeTableTab={activeTableTab}
+        onEdit={prepararEdicion}       // Esta es tu función local que llena el formulario
+        onPlan={handlePlanificar}      // Usa tu función local que tiene el alert confirm
+        onDelete={handleEliminar}      // Usa tu función local que tiene el alert confirm
+        setActiveTableTab={setActiveTableTab}
+      />
     </div>
   );
 
@@ -652,7 +354,7 @@ export default function DashboardPage() {
         {/* Sidebar - Botón para ocultar/mostrar el sidebar y si mostramos el texto */}
         <div className="p-6 border-b border-slate-800 flex justify-between items-center">
           {/* Solo mostramos el texto si está abierto */}
-          {sidebarOpen && <h2 className="text-xl font-bold text-blue-400 tracking-tighter italic animate-in fade-in">HF-SYSTEM</h2>}
+          {sidebarOpen && <h2 className="text-xl font-bold text-blue-400 tracking-tighter italic animate-in fade-in">HF - Operations System</h2>}
 
           {/* Botón para Toggle (Ocultar/Mostrar) */}
           <button
@@ -708,38 +410,6 @@ export default function DashboardPage() {
         {/* AQUÍ CONVOCAMOS EL CONTENIDO SEGÚN EL MÓDULO */}
         {renderContent()}
       </main>
-    </div>
-  );
-}
-
-// --- COMPONENTES ATÓMICOS CORREGIDOS (Sin any) ---
-
-// Componente de campo genérico para el ingreso de datos tipeados, con props tipados y sin uso de any
-function Field({ label, name, type = "text", step, value, onChange, readOnly }: FieldProps) {
-  const isDate = type === 'datetime-local' || type === 'date';
-  return (
-    <div className="flex flex-col">
-      <label className="block text-[10px] font-bold text-slate-500 mb-1 tracking-tighter">{label}</label>
-      <input
-        type={type} name={name} value={value ?? ""} onChange={onChange} readOnly={readOnly} step={step}
-        className={`w-full bg-slate-900 border border-slate-800 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-white${isDate ? '' : ' uppercase'}`}
-      />
-    </div>
-  );
-}
-
-// Componente de campo genérico para el ingreso de datos enlistados, con props tipados y sin uso de any
-function SelectField({ label, name, value, onChange, options }: SelectFieldProps) {
-  return (
-    <div className="flex flex-col">
-      <label className="block text-[10px] font-bold text-slate-500 mb-1 tracking-tighter">{label}</label>
-      <select
-        name={name} value={value ?? ""} onChange={onChange}
-        className="w-full bg-slate-900 border border-slate-800 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-white appearance-none uppercase"
-      >
-        <option value="">Seleccione...</option>
-        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
     </div>
   );
 }

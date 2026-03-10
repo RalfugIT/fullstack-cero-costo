@@ -9,6 +9,7 @@ import { EmbarqueTable } from '@/components/EmbarqueTable';
 
 // Definición de los items del menú con íconos representativos
 const MENU_ITEMS: MenuItem[] = [
+  { id: 'home', label: 'Home Dashboard', icon: '📊' },
   { id: 'embarques', label: 'Embarques', icon: '🚢' },
   { id: 'programacion', label: 'Programación', icon: '🍌' },
   { id: 'logistica', label: 'Logística', icon: '🚛' },
@@ -34,19 +35,63 @@ export default function DashboardPage() {
   const [activeTableTab, setActiveTableTab] = useState<'resumen' | 'completo'>('resumen');
 
   const initialFormState: EmbarqueForm = {
-    semana: '', booking: '', vessel: '', voyager: '', naviera: '', cliente: '',
-    pais_destino: '', ciudad_destino: '', puerto_destino_de_descarga: '',
-    destino_final_de_la_carga: '', depot_de_retiro: '', almacen_terminal_portuario: '',
-    tipo_de_embarque: '', cant_contenedores: 0, cajas_x_cont: 0, cajas_totales_cont: 0,
-    cant_pallets: 0, cajas_x_pallet: 0, cajas_totales_pallet: 0, cajas_totales_granel: 0,
-    marca: '', tipo_de_caja: '', calidad: '', pad: '', funda: '', sachet: '',
-    molecula: '', pneto_x_caja: 0, pneto_total: 0, pbruto_x_caja: 0, pbruto_total: 0,
-    horas_energia_libre: 0, inicio_energia_libre: '', cut_off_fisico: '',
-    cut_off_docs: '', detencion_libre: '', almacenaje_libre: '',
-    agencia_exportadora: '', observaciones: '', orden: '', aucp: '', dae: '',
-    regularizado: '', etd: '', tte: '', eta: '', precio_x_caja: 0, factura: '',
-    bl: '', liberacion: '', negociacion: '', terminos_de_pago: '', incoterm: '',
-    banco: '', documentos_enviados: '', area_departamento: '', incoterm_facturado: 0
+    semana: '',
+    booking: '',
+    vessel: '',
+    voyager: '',
+    naviera: '',
+    cliente: '',
+    pais_destino: '',
+    ciudad_destino: '',
+    puerto_destino_de_descarga: '',
+    destino_final_de_la_carga: '',
+    depot_de_retiro: '',
+    almacen_terminal_portuario: '',
+    tipo_de_embarque: '',
+    cant_contenedores: 0,
+    cajas_x_cont: 0,
+    cajas_totales_cont: 0,
+    cant_pallets: 0,
+    cajas_x_pallet: 0,
+    cajas_totales_pallet: 0,
+    cajas_totales_granel: 0,
+    marca: '',
+    tipo_de_caja: '',
+    calidad: '',
+    pad: '',
+    funda: '',
+    sachet: '',
+    molecula: '',
+    pneto_x_caja: 0,
+    pneto_total: 0,
+    pbruto_x_caja: 0,
+    pbruto_total: 0,
+    horas_energia_libre: 0,
+    inicio_energia_libre: '',
+    cut_off_fisico: '',
+    cut_off_docs: '',
+    detencion_libre: '',
+    almacenaje_libre: '',
+    agencia_exportadora: '',
+    observaciones: '',
+    orden: '',
+    aucp: '',
+    dae: '',
+    regularizado: '',
+    etd: '',
+    tte: '',
+    eta: '',
+    precio_x_caja: 0,
+    factura: '',
+    bl: '',
+    liberacion: '',
+    negociacion: '',
+    terminos_de_pago: '',
+    incoterm: '',
+    banco: '',
+    documentos_enviados: '',
+    area_departamento: '',
+    incoterm_facturado: 0
   };
 
   const [form, setForm] = useState<EmbarqueForm>(initialFormState);
@@ -345,7 +390,6 @@ export default function DashboardPage() {
 
   // --- RETURN PRINCIPAL (ESTE ES EL QUE LIMPIAMOS) ---
   return (
-
     <div className="flex min-h-screen bg-slate-950 text-slate-200">
       {/* SIDEBAR */}
       <aside className={`transition-all duration-300 ease-in-out border-r border-slate-800 flex flex-col sticky top-0 h-screen bg-slate-900/80 backdrop-blur-md 

@@ -1,8 +1,10 @@
+import { ReactNode } from 'react';
+
 // Nueva interfaz/cuerpo para el menú/sidebar
 export interface MenuItem {
     id: string;
     label: string;
-    icon: string;
+    icon: ReactNode;
 }
 
 // --- INTERFACES (ESTRUCTURAS DE DATOS//CAMPOS Mantenidas y Reforzadas) ---

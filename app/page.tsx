@@ -6,32 +6,36 @@ import { MenuItem, Embarque, EmbarqueForm } from '@/types/embarque';
 import { Field, SelectField } from '@/components/FormFields';
 import { useEmbarques } from '@/hooks/useEmbarques';
 import { EmbarqueTable } from '@/components/EmbarqueTable';
+import { useProgramacion } from '@/hooks/useProgramacion';
+import { Contenedor, Corte } from '@/types/programacion';
+import { ProgramacionTable } from '@/components/ProgramacionTable';
+import { ProgramacionTableAll } from '@/components/ProgramacionTableAll';
 
 // --- ICONOS SVG PARA EL SIDEBAR ---
 const Icons = {
   Home: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
   ),
   Ship: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.26 1.15 4.3 3 5.37"/><path d="M12 4v6"/><path d="M10 2h4"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" /><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.26 1.15 4.3 3 5.37" /><path d="M12 4v6" /><path d="M10 2h4" /></svg>
   ),
   Calendar: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>
   ),
   Truck: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-5h-4l-3 5"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18H9" /><path d="M19 18h2a1 1 0 0 0 1-1v-5h-4l-3 5" /><circle cx="7" cy="18" r="2" /><circle cx="17" cy="18" r="2" /></svg>
   ),
   FileText: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>
   ),
   Leaf: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" /><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" /></svg>
   ),
   Box: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></svg>
   ),
   Coins: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6" /><path d="M18.09 10.37A6 6 0 1 1 10.34 18" /><path d="M7 6h1v4" /><path d="m16.71 13.88.7.71-2.82 2.82" /></svg>
   )
 };
 
@@ -52,6 +56,27 @@ export default function DashboardPage() {
   // --- USAMOS EL HOOK ---
   // Traemos los datos y las funciones de acción directamente
   const { datos, loading, guardarEmbarque, eliminarEmbarque, planificarEmbarque } = useEmbarques();
+
+  // --- ESTADOS DE PROGRAMACIÓN ---
+  const [selectedEmbarqueId, setSelectedEmbarqueId] = useState<number | null>(null);
+  const [editandoCorteId, setEditandoCorteId] = useState<number | null>(null);
+  const { contenedores, programacionCompleta, todosLosCortes, loading: loadingProg, guardarPlanificacion, eliminarCorte: eliminarCorteDB } = useProgramacion(selectedEmbarqueId);
+
+  const initialCorteState: Partial<Corte> = {
+    negocia_productor: '', comercial: '', grupo: '', dia_de_corte: '', zona: '', productor: '',
+    hacienda: '', ubicacion: '', marca: '', cajas_programadas: 0, carton_desde: '',
+    consolidacion: '', modalidad: '', codigo_productor: '', codigo_magap: ''
+  };
+
+  const initialContenedorState: Partial<Contenedor> = {
+    contenedor: '', sello_naviero: '', sello_exportador: '', termografo: '',
+    tara: 0, peso_vgm: 0, peso_neto_ct: 0
+  };
+
+  const [formProg, setFormProg] = useState({
+    contenedor: initialContenedorState,
+    cortes: [initialCorteState]
+  });
 
   // --- ESTADOS DE UI (Se mantienen en la página) ---
   const [activeModule, setActiveModule] = useState('embarques');
@@ -223,9 +248,76 @@ export default function DashboardPage() {
 
   const handlePlanificar = async (id: number) => {
     if (!confirm("¿Planificar?")) return;
-    const { error } = await planificarEmbarque(id);
-    if (error) alert(error.message);
-    else setActiveModule('programacion');
+    setSelectedEmbarqueId(id);
+    setActiveModule('programacion');
+    // planificarEmbarque(id); // Opcional si quieres marcarlo en DB de inmediato
+  };
+
+  useEffect(() => {
+    if (selectedEmbarqueId && activeModule === 'programacion') {
+      const nextNum = contenedores.length + 1;
+      setFormProg(prev => ({
+        ...prev,
+        contenedor: {
+          ...initialContenedorState,
+          contenedor: `CT_#${nextNum}`,
+          foreign_id_embarque: selectedEmbarqueId
+        },
+        cortes: [{ ...initialCorteState }]
+      }));
+    }
+  }, [contenedores.length, selectedEmbarqueId, activeModule]);
+
+  const handleContenedorInput = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    setFormProg({
+      ...formProg,
+      contenedor: { ...formProg.contenedor, [name]: type === 'number' ? Number(value) : value }
+    });
+  };
+
+  const handleCorteInput = (index: number, e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const newCortes = [...formProg.cortes];
+    newCortes[index] = { ...newCortes[index], [name]: type === 'number' ? Number(value) : value };
+    setFormProg({ ...formProg, cortes: newCortes });
+  };
+
+  const agregarCorte = () => {
+    setFormProg({ ...formProg, cortes: [...formProg.cortes, { ...initialCorteState }] });
+  };
+
+  const eliminarCorte = (index: number) => {
+    if (formProg.cortes.length === 1) return;
+    const newCortes = formProg.cortes.filter((_, i) => i !== index);
+    setFormProg({ ...formProg, cortes: newCortes });
+  };
+
+  const handleSubmitProg = async (e: FormEvent) => {
+    e.preventDefault();
+    const { error } = await guardarPlanificacion(formProg.contenedor, formProg.cortes);
+    if (error) {
+      alert("Error: " + error.message);
+    } else {
+      alert("Planificación guardada exitosamente");
+      setFormProg({
+        contenedor: initialContenedorState,
+        cortes: [initialCorteState]
+      });
+      setSelectedEmbarqueId(null);
+      setActiveModule('embarques');
+    }
+  };
+
+  const handleEliminarCorteDB = async (id: number) => {
+    if (!confirm("¿Eliminar este corte?")) return;
+    const { error } = await eliminarCorteDB(id);
+    if (error) alert("Error: " + error.message);
+    else alert("Corte eliminado");
+  };
+
+  const handleEditarCorte = (corte: any) => {
+    alert("Función de edición en desarrollo para corte ID: " + corte.id_corte);
   };
 
   // --- RENDERS POR MÓDULO ---
@@ -257,7 +349,7 @@ export default function DashboardPage() {
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 group-hover:text-slate-400 transition-colors">Cliente</p>
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                   </div>
                   <p className="text-lg font-bold text-white truncate">{form.cliente || '---'}</p>
                 </div>
@@ -267,7 +359,7 @@ export default function DashboardPage() {
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 group-hover:text-slate-400 transition-colors">Total Cajas</p>
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15" /><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></svg>
                   </div>
                   <p className="text-xl font-mono font-bold text-blue-400">{calculos.total_general.toLocaleString()}</p>
                 </div>
@@ -277,7 +369,7 @@ export default function DashboardPage() {
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 group-hover:text-slate-400 transition-colors">Cut Off Físico</p>
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                   </div>
                   <p className="text-lg font-mono font-bold text-orange-400">{isoToDisplay(form.cut_off_fisico) || '---'}</p>
                 </div>
@@ -287,7 +379,7 @@ export default function DashboardPage() {
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 group-hover:text-slate-400 transition-colors">Incoterm Facturado</p>
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
                   </div>
                   <p className="text-xl font-mono font-bold text-yellow-500">${calculos.incoterm_facturado.toLocaleString()}</p>
                 </div>
@@ -311,7 +403,7 @@ export default function DashboardPage() {
                   <Field label="Cliente" name="cliente" value={form.cliente} onChange={handleInput} />
                   <Field label="Puerto Destino" name="puerto_destino_de_descarga" value={form.puerto_destino_de_descarga} onChange={handleInput} />
                   <SelectField label="Depot de Retiro" name="depot_de_retiro" value={form.depot_de_retiro} onChange={handleInput}
-                    options={['ARETINA', 'BLASTI', 'DEPCONSA', 'FARBEM NORTE', 'FARBEM SUR', 'MEDLOG NORTE',
+                    options={['ARETINA', 'BLASTI', 'DEPCONSA', 'INARPI', 'FARBEM NORTE', 'FARBEM SUR', 'MEDLOG NORTE',
                       'MEDLOG SUR', 'OPACIF NORTE', 'OPACIF SUR', 'PRCS', 'RFS', 'TASAESA', 'TERCON']}
                   />
                   <SelectField label="Almacén / Terminal Portuario" name="almacen_terminal_portuario" value={form.almacen_terminal_portuario} onChange={handleInput}
@@ -422,11 +514,127 @@ export default function DashboardPage() {
     </div>
   );
 
-  const renderProgramacionModule = () => (
-    <div className="p-6">
-      <h2 className="text-xl font-bold text-blue-400 tracking-tighter italic animate-in fade-in">Programación en desarrollo... activo</h2>
-    </div>
-  );
+  const renderProgramacionModule = () => {
+    const embarqueActual = datos.find(e => e.id_embarque === selectedEmbarqueId);
+
+    // Siempre mostrar el listado de todos los cortes
+    return (
+      <div className="animate-in fade-in duration-500 space-y-8">
+        {/* TABLA DE TODOS LOS CORTES PLANIFICADOS */}
+        <ProgramacionTableAll 
+          datos={todosLosCortes} 
+          onDelete={handleEliminarCorteDB}
+          onEdit={handleEditarCorte}
+        />
+
+        {/* BOTÓN PARA NUEVA PLANIFICACIÓN */}
+        {!selectedEmbarqueId && (
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-xl text-center">
+            <p className="text-slate-400 mb-4">¿Desea planificar un nuevo embarque?</p>
+            <p className="text-sm text-slate-500 mb-6">Seleccione un embarque desde el módulo de Embarques y cliquee "Planificar"</p>
+            <button
+              onClick={() => setActiveModule('embarques')}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-lg font-bold transition-all shadow-lg text-sm uppercase tracking-widest"
+            >
+              IR A EMBARQUES
+            </button>
+          </div>
+        )}
+
+        {/* FORMULARIO DE PLANIFICACIÓN (cuando hay embarque seleccionado) */}
+        {selectedEmbarqueId && (
+          <>
+            <div className="mb-6 bg-slate-900 border border-slate-800 p-6 rounded-xl flex justify-between items-center shadow-lg">
+              <div>
+                <h3 className="text-lg font-bold text-white">Planificando Embarque: <span className="text-blue-400">{embarqueActual?.booking}</span></h3>
+                <p className="text-sm text-slate-400">{embarqueActual?.vessel} - {embarqueActual?.naviera} - {embarqueActual?.cliente}</p>
+              </div>
+              <button
+                onClick={() => setSelectedEmbarqueId(null)}
+                className="text-xs font-bold text-red-400 hover:text-red-300 uppercase tracking-widest border border-red-900/50 px-4 py-2 rounded-lg hover:bg-red-900/10 transition-all"
+              >
+                Cancelar Planificación
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitProg} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+              <div className="bg-slate-800/50 p-4 border-b border-slate-700">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Datos del Contenedor</h4>
+              </div>
+
+              <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-5">
+                <Field label="Contenedor" name="contenedor" value={formProg.contenedor.contenedor} onChange={handleContenedorInput} />
+                <Field label="Sello Naviero" name="sello_naviero" value={formProg.contenedor.sello_naviero} onChange={handleContenedorInput} />
+                <Field label="Sello Exportador" name="sello_exportador" value={formProg.contenedor.sello_exportador} onChange={handleContenedorInput} />
+                <Field label="Termógrafo" name="termografo" value={formProg.contenedor.termografo} onChange={handleContenedorInput} />
+                <Field label="Tara" name="tara" type="number" value={formProg.contenedor.tara} onChange={handleContenedorInput} />
+                <Field label="Peso VGM" name="peso_vgm" type="number" value={formProg.contenedor.peso_vgm} onChange={handleContenedorInput} />
+                <Field label="Peso Neto CT" name="peso_neto_ct" type="number" value={formProg.contenedor.peso_neto_ct} onChange={handleContenedorInput} />
+              </div>
+
+              <div className="bg-slate-800/50 p-4 border-b border-t border-slate-700 flex justify-between items-center">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Cortes / Productores</h4>
+                <button
+                  type="button" onClick={agregarCorte}
+                  className="bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-500/30 transition-all"
+                >
+                  + Agregar Productor/Corte
+                </button>
+              </div>
+
+              <div className="p-6 space-y-8">
+                {formProg.cortes.map((corte, index) => (
+              <div key={index} className="bg-slate-800/30 p-6 rounded-xl border border-slate-800 relative group transition-all hover:bg-slate-800/40">
+                <div className="absolute -top-3 left-4 bg-slate-800 px-3 py-1 rounded-full border border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                  Productor #{index + 1}
+                </div>
+
+                {formProg.cortes.length > 1 && (
+                  <button
+                    type="button" onClick={() => eliminarCorte(index)}
+                    className="absolute top-4 right-4 text-red-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
+                  </button>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+                  <Field label="Negocia Productor" name="negocia_productor" value={corte.negocia_productor} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Comercial" name="comercial" value={corte.comercial} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Grupo" name="grupo" value={corte.grupo} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Día de Corte" name="dia_de_corte" value={corte.dia_de_corte} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Zona" name="zona" value={corte.zona} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Productor" name="productor" value={corte.productor} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Hacienda" name="hacienda" value={corte.hacienda} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Ubicación" name="ubicacion" value={corte.ubicacion} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Marca" name="marca" value={corte.marca} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Cajas Programadas" name="cajas_programadas" type="number" value={corte.cajas_programadas} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Cartón Desde" name="carton_desde" value={corte.carton_desde} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Consolidación" name="consolidacion" value={corte.consolidacion} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Modalidad" name="modalidad" value={corte.modalidad} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Código Productor" name="codigo_productor" value={corte.codigo_productor} onChange={(e) => handleCorteInput(index, e)} />
+                  <Field label="Código MAGAP" name="codigo_magap" value={corte.codigo_magap} onChange={(e) => handleCorteInput(index, e)} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 bg-slate-800/50 border-t border-slate-800 flex justify-end">
+            <button
+              type="submit" disabled={loadingProg}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white px-12 py-3 rounded-lg font-bold transition-all shadow-lg text-sm uppercase tracking-widest"
+            >
+              {loadingProg ? 'PROCESANDO...' : 'GUARDAR PLANIFICACIÓN'}
+            </button>
+          </div>
+        </form>
+        </>
+        )}
+
+        <ProgramacionTable datos={programacionCompleta} />
+      </div>
+    );
+  };
 
   {/* Switchea el Sidebar - Renderizado del contenido */ }
   const renderContent = () => {
@@ -464,9 +672,9 @@ export default function DashboardPage() {
             className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all active:scale-90"
           >
             {sidebarOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
             )}
           </button>
         </div>
@@ -479,17 +687,16 @@ export default function DashboardPage() {
               <button
                 key={item.id}
                 onClick={() => setActiveModule(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group relative ${
-                  isActive
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group relative ${isActive
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
                     : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'
-                } ${!sidebarOpen ? 'justify-center' : ''}`}
+                  } ${!sidebarOpen ? 'justify-center' : ''}`}
                 title={item.label}
               >
                 <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
                   {item.icon}
                 </div>
-                
+
                 {sidebarOpen && (
                   <span className="animate-in fade-in slide-in-from-left-2 duration-300 flex-1 text-left">
                     {item.label}
@@ -500,12 +707,12 @@ export default function DashboardPage() {
                 {isActive && sidebarOpen && (
                   <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                 )}
-                
+
                 {/* Tooltip for collapsed state (CSS only simple) */}
                 {!sidebarOpen && (
-                   <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-slate-700">
-                     {item.label}
-                   </div>
+                  <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-slate-700">
+                    {item.label}
+                  </div>
                 )}
               </button>
             );

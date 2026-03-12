@@ -6,6 +6,7 @@ import { MenuItem, Embarque, EmbarqueForm } from '@/types/embarque';
 import { Field, SelectField } from '@/components/FormFields';
 import { useEmbarques } from '@/hooks/useEmbarques';
 import { EmbarqueTable } from '@/components/EmbarqueTable';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { useProgramacion } from '@/hooks/useProgramacion';
 import { Contenedor, Corte } from '@/types/programacion';
 import { ProgramacionTable } from '@/components/ProgramacionTable';
@@ -86,6 +87,7 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [subtipoSuelta, setSubtipoSuelta] = useState('');
   const [activeTableTab, setActiveTableTab] = useState<'resumen' | 'completo'>('resumen');
+  const isGlobalLoading = loading || loadingProg;
 
   const initialFormState: EmbarqueForm = {
     semana: '',
@@ -731,6 +733,7 @@ export default function DashboardPage() {
 
       {/* CONTENIDO DINÁMICO - Contenido del MAIN() */}
       <main className="flex-1 p-6 overflow-y-auto">
+        <LoadingOverlay visible={isGlobalLoading} />
         <header className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
           <div>
             <h1 className="text-3xl font-bold text-blue-400 uppercase tracking-tighter">
